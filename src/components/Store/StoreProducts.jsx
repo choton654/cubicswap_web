@@ -1,12 +1,35 @@
-import { createDrawerNavigator, DrawerContentScrollView } from "@react-navigation/drawer";
-import { Actionsheet, Box, Button, Flex, Spinner, Text, VStack } from "native-base";
+import {
+  createDrawerNavigator,
+  DrawerContentScrollView,
+} from "@react-navigation/drawer";
+import {
+  Actionsheet,
+  Box,
+  Button,
+  Flex,
+  Spinner,
+  Text,
+  VStack,
+} from "native-base";
 import React from "react";
-import { ActivityIndicator, FlatList, ScrollView, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  ScrollView,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Icon, ListItem } from "react-native-elements";
 import { useInfiniteQuery } from "react-query";
 import { client } from "../../client";
 import ImageCorosal from "../../components/Product/ImageCorosal";
-import { accentColor, darkPrimaryColor, lightText, primaryColor, textColor } from "../../Constant/color";
+import {
+  accentColor,
+  darkPrimaryColor,
+  lightText,
+  primaryColor,
+  textColor,
+} from "../../Constant/color";
 import { ScreenState } from "../../context/state/screenState";
 import { GET_PRODUCTS_BY_STORE } from "../../graphql/query";
 import ProductDetails from "../Home/ProductDetails";
@@ -21,7 +44,13 @@ import TablePagination from "./TablePagination";
 import TableRow from "./TableRow";
 import router from "next/router";
 
-const getProductsByOptionsQuery = async (pageParam, numberOfItemsPerPage, categories, sort, id) => {
+const getProductsByOptionsQuery = async (
+  pageParam,
+  numberOfItemsPerPage,
+  categories,
+  sort,
+  id
+) => {
   let getProductsByStoreFilter;
   if (categories.length === 0 || categories[0] === "All") {
     getProductsByStoreFilter = {
@@ -52,7 +81,7 @@ const getProductsByOptionsQuery = async (pageParam, numberOfItemsPerPage, catego
   };
 };
 
-const StoreProducts = props => {
+const StoreProducts = (props) => {
   const Drawer = createDrawerNavigator();
 
   const { show, screenHeight, screenWidth, setSelectedIndex } = ScreenState();
@@ -62,7 +91,7 @@ const StoreProducts = props => {
   const [categories, setCategories] = React.useState([]);
   const [selectCatName, setSelectCatName] = React.useState("All");
   const [toggle, setToggle] = React.useState(true);
-  const [storeCategories] = React.useState(JSON.parse(props.storeCategories));
+  const [storeCategories] = React.useState(props.storeCategories);
   const [numberOfItemsPerPage, onItemsPerPageChange] = React.useState(10);
   const [open, setOpen] = React.useState(false);
 
@@ -70,33 +99,51 @@ const StoreProducts = props => {
 
   const [viewProduct, setViewProduct] = React.useState(null);
 
-  const mediaByIndex = index => viewProduct && viewProduct.images[index % viewProduct.images.length];
+  const mediaByIndex = (index) =>
+    viewProduct && viewProduct.images[index % viewProduct.images.length];
   const SLIDE_COUNT = viewProduct && viewProduct.images.length;
   const slides = Array.from(Array(SLIDE_COUNT).keys());
 
-  const { data, isLoading, isSuccess, isError, isFetchingNextPage, fetchNextPage, isFetching, hasNextPage } =
-    useInfiniteQuery(
-      ["getProductsByOptions-store", [numberOfItemsPerPage, categories, sort, page]],
-      ({ pageParam = 1 }) =>
-        getProductsByOptionsQuery(pageParam, numberOfItemsPerPage, categories, sort, props.id),
-      {
-        // enabled: false,
-        keepPreviousData: true,
-        refetchOnWindowFocus: false,
-        initialData: JSON.parse(props.data),
-        getNextPageParam: (lastPage, pages) => {
-          return lastPage.hasNextPage ? lastPage.currentPage + 1 : undefined;
-        },
-        getPreviousPageParam: (firstPage, allPages) => {
-          return firstPage.hasPreviousPage;
-        },
-        onSettled: () => {
-          if (open) {
-            setOpen(!open);
-          }
-        },
-      }
-    );
+  const {
+    data,
+    isLoading,
+    isSuccess,
+    isError,
+    isFetchingNextPage,
+    fetchNextPage,
+    isFetching,
+    hasNextPage,
+  } = useInfiniteQuery(
+    [
+      "getProductsByOptions-store",
+      [numberOfItemsPerPage, categories, sort, page],
+    ],
+    ({ pageParam = 1 }) =>
+      getProductsByOptionsQuery(
+        pageParam,
+        numberOfItemsPerPage,
+        categories,
+        sort,
+        props.id
+      ),
+    {
+      // enabled: false,
+      keepPreviousData: true,
+      refetchOnWindowFocus: false,
+      initialData: props.data,
+      getNextPageParam: (lastPage, pages) => {
+        return lastPage.hasNextPage ? lastPage.currentPage + 1 : undefined;
+      },
+      getPreviousPageParam: (firstPage, allPages) => {
+        return firstPage.hasPreviousPage;
+      },
+      onSettled: () => {
+        if (open) {
+          setOpen(!open);
+        }
+      },
+    }
+  );
 
   const hideDetails = () => {
     setIsVisible(false);
@@ -114,11 +161,11 @@ const StoreProducts = props => {
   // };
 
   return (
-    <Layout title={JSON.parse(props.store).storeName}>
-      <StoreLayout store={JSON.parse(props.store)} toggle={toggle} setToggle={setToggle} />
+    <Layout title={props.store.storeName}>
+      <StoreLayout store={props.store} toggle={toggle} setToggle={setToggle} />
       {isLoading && (
         <Flex flex={1} my={"50%"}>
-          <Spinner size='sm' color={accentColor} />
+          <Spinner size="sm" color={accentColor} />
         </Flex>
       )}
       <Drawer.Navigator
@@ -131,25 +178,29 @@ const StoreProducts = props => {
               maxHeight: !show ? screenHeight - 160 : screenHeight - 104,
               flex: 1,
               zIndex: 100,
-            }}>
+            }}
+          >
             <View
               style={{
                 backgroundColor: accentColor,
                 height: screenHeight - 56,
-              }}>
+              }}
+            >
               <View
                 style={{
                   justifyContent: "flex-start",
                   alignItems: "center",
                   padding: 10,
                   backgroundColor: accentColor,
-                }}>
+                }}
+              >
                 <Text
                   style={{
                     fontSize: 15,
                     fontWeight: "500",
                     color: primaryColor,
-                  }}>
+                  }}
+                >
                   Categories
                 </Text>
               </View>
@@ -173,25 +224,34 @@ const StoreProducts = props => {
                         setCategories([p._id.toString()]);
                         setSelectCatName(p.name.toString());
                       }
-                    }}>
+                    }}
+                  >
                     <ListItem
                       style={{ width: "100%" }}
                       containerStyle={{
                         padding: 10,
                         marginHorizontal: 10,
                         marginVertical: 5,
-                        backgroundColor: selectCatName === p.name ? darkPrimaryColor : primaryColor,
+                        backgroundColor:
+                          selectCatName === p.name
+                            ? darkPrimaryColor
+                            : primaryColor,
                         borderRadius: 5,
-                      }}>
+                      }}
+                    >
                       <ListItem.Content>
-                        <ListItem.Title style={{ fontWeight: 500, color: accentColor }}>{p.name}</ListItem.Title>
+                        <ListItem.Title
+                          style={{ fontWeight: 500, color: accentColor }}
+                        >
+                          {p.name}
+                        </ListItem.Title>
                       </ListItem.Content>
                       <Icon
                         color={accentColor}
                         style={{
                           marginLeft: "auto",
                         }}
-                        type='material'
+                        type="material"
                         name={"chevron-right"}
                       />
                     </ListItem>
@@ -211,13 +271,14 @@ const StoreProducts = props => {
           headerShown: false,
           drawerType: "permanent",
           drawerPosition: "left",
-        }}>
-        <Drawer.Screen name='Cubicswap'>
+        }}
+      >
+        <Drawer.Screen name="Cubicswap">
           {({ navigation }) => (
             <View style={{ height: "100%" }}>
               {isLoading ? (
                 <Flex flex={1} my={"auto"}>
-                  <Spinner size='sm' color={accentColor} />
+                  <Spinner size="sm" color={accentColor} />
                 </Flex>
               ) : (
                 isSuccess &&
@@ -228,8 +289,11 @@ const StoreProducts = props => {
                       // onScroll={loadMore}
                       contentContainerStyle={{
                         // minHeight: "100vh",
-                        maxHeight: !show ? screenHeight - 160 : screenHeight - 104,
-                      }}>
+                        maxHeight: !show
+                          ? screenHeight - 160
+                          : screenHeight - 104,
+                      }}
+                    >
                       <TablePagination
                         data={data}
                         setPage={setPage}
@@ -249,7 +313,9 @@ const StoreProducts = props => {
                               <FlatList
                                 key={toggle ? "-" : "#"}
                                 keyExtractor={(item, idx) =>
-                                  toggle ? "-" + idx.toString() : "#" + idx.toString()
+                                  toggle
+                                    ? "-" + idx.toString()
+                                    : "#" + idx.toString()
                                 }
                                 contentContainerStyle={{
                                   backgroundColor: textColor,
@@ -267,7 +333,8 @@ const StoreProducts = props => {
                                           justifyContent: "center",
                                           alignItems: "center",
                                           position: "relative",
-                                        }}>
+                                        }}
+                                      >
                                         <ProductDetails p={item} />
                                         <Box
                                           style={{
@@ -285,7 +352,8 @@ const StoreProducts = props => {
                                             justifyContent: "center",
                                             alignItems: "center",
                                             flex: 1,
-                                          }}>
+                                          }}
+                                        >
                                           <QuickView
                                             p={item}
                                             setViewProduct={setViewProduct}
@@ -310,7 +378,8 @@ const StoreProducts = props => {
                                 flex: 1,
                                 justifyContent: "center",
                                 alignItems: "center",
-                              }}>
+                              }}
+                            >
                               <Text>No products found</Text>
                             </View>
                           )}
@@ -332,8 +401,9 @@ const StoreProducts = props => {
                             justifyContent: "center",
                             alignItems: "center",
                             padding: 20,
-                          }}>
-                          <ActivityIndicator size='small' color={accentColor} />
+                          }}
+                        >
+                          <ActivityIndicator size="small" color={accentColor} />
                         </View>
                       )}
                       {/* <View>
@@ -367,10 +437,11 @@ const StoreProducts = props => {
           maxW={screenWidth}
           w={screenWidth}
           mx={"auto"}
-          hideDragIndicator>
+          hideDragIndicator
+        >
           <Actionsheet.Content>
             <TouchableOpacity style={{ marginBottom: 5 }} onPress={hideDetails}>
-              <Icon size={!show ? 20 : 30} type='material' name='cancel' />
+              <Icon size={!show ? 20 : 30} type="material" name="cancel" />
             </TouchableOpacity>
             <ScrollView contentContainerStyle={{ gridGap: 10 }}>
               <TouchableOpacity style={{ marginHorizontal: 10 }}>
@@ -386,16 +457,31 @@ const StoreProducts = props => {
                 />
               </TouchableOpacity>
               <Actionsheet.Content style={{ flex: 1 }} shadow={"0"} sha>
-                <VStack space={"2"} p={"2"} px={show ? "5" : "2"} w={screenWidth}>
-                  <Text style={{ fontSize: 18, fontWeight: "500" }}>{viewProduct.name}</Text>
-                  <Text>
-                    <Text style={{ fontWeight: "500", fontSize: 15 }}>Price: </Text>₹ {viewProduct.price} /{" "}
-                    {viewProduct.unit}
+                <VStack
+                  space={"2"}
+                  p={"2"}
+                  px={show ? "5" : "2"}
+                  w={screenWidth}
+                >
+                  <Text style={{ fontSize: 18, fontWeight: "500" }}>
+                    {viewProduct.name}
                   </Text>
                   <Text>
-                    <Text style={{ fontWeight: "500", fontSize: 15, color: "#000" }}>Min Order:</Text>
+                    <Text style={{ fontWeight: "500", fontSize: 15 }}>
+                      Price:{" "}
+                    </Text>
+                    ₹ {viewProduct.price} / {viewProduct.unit}
+                  </Text>
+                  <Text>
+                    <Text
+                      style={{ fontWeight: "500", fontSize: 15, color: "#000" }}
+                    >
+                      Min Order:
+                    </Text>
                     {viewProduct.minOrder}{" "}
-                    {viewProduct.minOrder > 1 ? `${viewProduct.unit}s` : `${viewProduct.unit}`}
+                    {viewProduct.minOrder > 1
+                      ? `${viewProduct.unit}s`
+                      : `${viewProduct.unit}`}
                   </Text>
                   {/* <View>
                     <Text>
@@ -404,19 +490,24 @@ const StoreProducts = props => {
                     </Text>
                   </View> */}
 
-                  <ProductPriceRange product={viewProduct} orderQty={viewProduct.minOrder} />
+                  <ProductPriceRange
+                    product={viewProduct}
+                    orderQty={viewProduct.minOrder}
+                  />
                   <Button
                     onPress={() => {
                       setSelectedIndex(0);
                       router.push(`/product/${viewProduct._id}`);
                     }}
-                    bg={primaryColor}>
+                    bg={primaryColor}
+                  >
                     <Text
                       style={{
                         fontWeight: "500",
                         fontSize: 15,
                         color: accentColor,
-                      }}>
+                      }}
+                    >
                       Show all details
                     </Text>
                   </Button>

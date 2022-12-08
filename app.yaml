@@ -1,5 +1,5 @@
 runtime: nodejs16
-service: cubicswap
+service: cubicswap_web
 env: standard
 instance_class: F1
 automatic_scaling:

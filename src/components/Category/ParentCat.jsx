@@ -1,5 +1,14 @@
-import { createDrawerNavigator, DrawerContentScrollView } from "@react-navigation/drawer";
-import { Actionsheet, useDisclose, ScrollView, Badge, IconButton } from "native-base";
+import {
+  createDrawerNavigator,
+  DrawerContentScrollView,
+} from "@react-navigation/drawer";
+import {
+  Actionsheet,
+  useDisclose,
+  ScrollView,
+  Badge,
+  IconButton,
+} from "native-base";
 import { createStackNavigator } from "@react-navigation/stack";
 import { Box, FlatList, Text, Flex, Pressable, Link } from "native-base";
 import router from "next/router";
@@ -11,22 +20,27 @@ import { useInfiniteQuery } from "react-query";
 import ProductDetails from "../../components/Home/ProductDetails";
 import Layout from "../../components/Layout";
 import Footer from "../../components/Layout/Footer";
-import { accentColor, linkColor, primaryColor, textColor } from "../../Constant/color";
+import {
+  accentColor,
+  linkColor,
+  primaryColor,
+  textColor,
+} from "../../Constant/color";
 import { ScreenState } from "../../context/state/screenState";
 import { getProductsByOptionsQuery } from "../../graphql/query";
 import CatAccordin from "./CatAccordin";
 import LoadMore from "../Layout/LoadMore";
 
 const Parentcat = ({ data, catId, name, categories2, categories1 }) => {
-  const [parent1] = useState(JSON.parse(categories1));
+  const [parent1] = useState(categories1);
 
-  const [parent2] = useState(JSON.parse(categories2));
+  const [parent2] = useState(categories2);
   const { isOpen, onOpen, onClose } = useDisclose();
   // const [current, setCurrent] = useState({
-  //   ...JSON.parse(categories1)[0],
-  //   href: JSON.parse(categories1)[0].hasProduct
-  //     ? `/categories/${JSON.parse(categories1)[0]._id}`
-  //     : `/categories/allCategories/mid/${JSON.parse(categories1)[0]._id}`,
+  //   ...categories1[0],
+  //   href: categories1[0].hasProduct
+  //     ? `/categories/${categories1[0]._id}`
+  //     : `/categories/allCategories/mid/${categories1[0]._id}`,
   // });
 
   const [open, setOpen] = React.useState(false);
@@ -45,10 +59,11 @@ const Parentcat = ({ data, catId, name, categories2, categories1 }) => {
     hasNextPage,
   } = useInfiniteQuery(
     ["getProductsByMainCats", parent1],
-    ({ pageParam = 1 }) => getProductsByOptionsQuery(pageParam, JSON.parse(categories1), JSON.parse(categories2)),
+    ({ pageParam = 1 }) =>
+      getProductsByOptionsQuery(pageParam, categories1, categories2),
     {
       // enabled: false,
-      initialData: JSON.parse(data),
+      initialData: data,
       refetchOnWindowFocus: false,
       retryOnMount: false,
       refetchOnReconnect: false,
@@ -72,36 +87,46 @@ const Parentcat = ({ data, catId, name, categories2, categories1 }) => {
               maxHeight: show ? screenHeight - 56 : screenHeight - 112,
               // flex: 1,
               zIndex: 100,
-            }}>
+            }}
+          >
             <View
               style={{
                 backgroundColor: accentColor,
                 height: show ? screenHeight - 56 : screenHeight - 112,
-              }}>
+              }}
+            >
               <View
                 style={{
                   justifyContent: "flex-start",
                   alignItems: "center",
                   padding: 10,
                   backgroundColor: accentColor,
-                }}>
+                }}
+              >
                 <Text
                   style={{
                     fontSize: 15,
                     fontWeight: "500",
                     color: primaryColor,
-                  }}>
+                  }}
+                >
                   Collections
                 </Text>
               </View>
               <View style={{}}>
                 {[
-                  ...parent1.map(c => ({
+                  ...parent1.map((c) => ({
                     ...c,
-                    href: c.hasProduct ? `/categories/${c._id}` : `/categories/allCategories/mid/${c._id}`,
+                    href: c.hasProduct
+                      ? `/categories/${c._id}`
+                      : `/categories/allCategories/mid/${c._id}`,
                   })),
                 ].map((p, i) => (
-                  <CatAccordin key={i} title={p} desc={parent2.filter(p2 => p2.parentCatId === p._id)} />
+                  <CatAccordin
+                    key={i}
+                    title={p}
+                    desc={parent2.filter((p2) => p2.parentCatId === p._id)}
+                  />
                 ))}
               </View>
             </View>
@@ -118,41 +143,53 @@ const Parentcat = ({ data, catId, name, categories2, categories1 }) => {
           headerShown: false,
           drawerType: show ? "permanent" : "permanent",
           drawerPosition: "left",
-        }}>
-        <Drawer.Screen name='ddd'>
+        }}
+      >
+        <Drawer.Screen name="ddd">
           {({ navigation }) => (
             <Stack.Navigator
               screenOptions={({ navigation }) => ({
                 headerShown: false,
-              })}>
-              <Stack.Screen name='Cubicswap'>
+              })}
+            >
+              <Stack.Screen name="Cubicswap">
                 {() => (
                   <ScrollView
                     contentContainerStyle={{
                       minHeight: "100vh",
-                      maxHeight: !show ? screenHeight - 112 : screenHeight - 112,
-                    }}>
-                    <Flex p={3} direction='row' alignItems='center' bg={accentColor}>
+                      maxHeight: !show
+                        ? screenHeight - 112
+                        : screenHeight - 112,
+                    }}
+                  >
+                    <Flex
+                      p={3}
+                      direction="row"
+                      alignItems="center"
+                      bg={accentColor}
+                    >
                       {!show && (
                         <Pressable
                           pr={4}
-                          justifyContent='center'
-                          alignItems='center'
+                          justifyContent="center"
+                          alignItems="center"
                           paddingHorizontal={"10px"}
                           onPress={() => {
                             // setOpen(!open);
                             onOpen();
                             // navigation.toggleDrawer();
-                          }}>
+                          }}
+                        >
                           <Box>
                             <svg
-                              xmlns='http://www.w3.org/2000/svg'
-                              height='24px'
-                              viewBox='0 0 24 24'
-                              width='20px'
-                              fill={primaryColor}>
-                              <path d='M0 0h24v24H0V0z' fill='none' />
-                              <path d='M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z' />
+                              xmlns="http://www.w3.org/2000/svg"
+                              height="24px"
+                              viewBox="0 0 24 24"
+                              width="20px"
+                              fill={primaryColor}
+                            >
+                              <path d="M0 0h24v24H0V0z" fill="none" />
+                              <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z" />
                             </svg>
                           </Box>
                         </Pressable>
@@ -160,30 +197,39 @@ const Parentcat = ({ data, catId, name, categories2, categories1 }) => {
                       <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ backgroundColor: accentColor }}>
+                        contentContainerStyle={{ backgroundColor: accentColor }}
+                      >
                         <Link
                           isUnderlined
                           onPress={() => {
                             router.push(`/categories/allCategories`);
-                          }}>
-                          <Badge backgroundColor={primaryColor} color={accentColor}>
+                          }}
+                        >
+                          <Badge
+                            backgroundColor={primaryColor}
+                            color={accentColor}
+                          >
                             All Collections
                           </Badge>
                         </Link>
 
                         <Box>
                           <svg
-                            xmlns='http://www.w3.org/2000/svg'
-                            height='24px'
-                            viewBox='0 0 24 24'
-                            width='20px'
-                            fill={primaryColor}>
-                            <path d='M0 0h24v24H0V0z' fill='none' />
-                            <path d='M10.02 6L8.61 7.41 13.19 12l-4.58 4.59L10.02 18l6-6-6-6z' />
+                            xmlns="http://www.w3.org/2000/svg"
+                            height="24px"
+                            viewBox="0 0 24 24"
+                            width="20px"
+                            fill={primaryColor}
+                          >
+                            <path d="M0 0h24v24H0V0z" fill="none" />
+                            <path d="M10.02 6L8.61 7.41 13.19 12l-4.58 4.59L10.02 18l6-6-6-6z" />
                           </svg>
                         </Box>
 
-                        <Badge backgroundColor={primaryColor} color={accentColor}>
+                        <Badge
+                          backgroundColor={primaryColor}
+                          color={accentColor}
+                        >
                           {name}
                         </Badge>
 
@@ -216,7 +262,9 @@ const Parentcat = ({ data, catId, name, categories2, categories1 }) => {
                                 data={p.products}
                                 centerContent
                                 keyExtractor={(item, idx) => idx.toString()}
-                                renderItem={({ item }) => <ProductDetails p={item} />}
+                                renderItem={({ item }) => (
+                                  <ProductDetails p={item} />
+                                )}
                               />
                             </View>
                           </React.Fragment>
@@ -263,13 +311,19 @@ const Parentcat = ({ data, catId, name, categories2, categories1 }) => {
         <Overlay
           isVisible={isOpen}
           statusBarTranslucent
-          animationType='slide'
+          animationType="slide"
           fullScreen
           collapsable
           focusable
-          overlayStyle={{ backgroundColor: accentColor }}>
+          overlayStyle={{ backgroundColor: accentColor }}
+        >
           <TouchableOpacity style={{ padding: 10 }} onPress={onClose}>
-            <Icon size={30} type='material' name='cancel' color={primaryColor} />
+            <Icon
+              size={30}
+              type="material"
+              name="cancel"
+              color={primaryColor}
+            />
           </TouchableOpacity>
           <Box textAlign={"center"}>
             <Text color={primaryColor} fontWeight={"500"}>
@@ -278,12 +332,18 @@ const Parentcat = ({ data, catId, name, categories2, categories1 }) => {
           </Box>
           <ScrollView>
             {[
-              ...parent1.map(c => ({
+              ...parent1.map((c) => ({
                 ...c,
-                href: c.hasProduct ? `/categories/${c._id}` : `/categories/allCategories/mid/${c._id}`,
+                href: c.hasProduct
+                  ? `/categories/${c._id}`
+                  : `/categories/allCategories/mid/${c._id}`,
               })),
             ].map((p, i) => (
-              <CatAccordin key={i} title={p} desc={parent2.filter(p2 => p2.parentCatId === p._id)} />
+              <CatAccordin
+                key={i}
+                title={p}
+                desc={parent2.filter((p2) => p2.parentCatId === p._id)}
+              />
             ))}
           </ScrollView>
         </Overlay>

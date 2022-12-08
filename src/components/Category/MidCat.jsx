@@ -1,5 +1,17 @@
-import { createDrawerNavigator, DrawerContentScrollView } from "@react-navigation/drawer";
-import { Flex, Pressable, FlatList, ScrollView, Text, Box, Link, Badge } from "native-base";
+import {
+  createDrawerNavigator,
+  DrawerContentScrollView,
+} from "@react-navigation/drawer";
+import {
+  Flex,
+  Pressable,
+  FlatList,
+  ScrollView,
+  Text,
+  Box,
+  Link,
+  Badge,
+} from "native-base";
 import router from "next/router";
 import React, { useState } from "react";
 import { ActivityIndicator, TouchableOpacity, View } from "react-native";
@@ -9,15 +21,20 @@ import { useInfiniteQuery } from "react-query";
 import ProductDetails from "../../components/Home/ProductDetails";
 import Layout from "../../components/Layout";
 import Footer from "../../components/Layout/Footer";
-import { accentColor, linkColor, primaryColor, textColor } from "../../Constant/color";
+import {
+  accentColor,
+  linkColor,
+  primaryColor,
+  textColor,
+} from "../../Constant/color";
 import { ScreenState } from "../../context/state/screenState";
 import { getProductsByOptionsQuery } from "../../graphql/query";
 import LoadMore from "../Layout/LoadMore";
 import CatAccordin from "./CatAccordin";
 
 const NavProductByCat = ({ data, catId, parent, name, categories1 }) => {
-  const [parent1] = useState(JSON.parse(categories1));
-  const [topParent] = useState(JSON.parse(parent));
+  const [parent1] = useState(categories1);
+  const [topParent] = useState(parent);
 
   const [open, setOpen] = React.useState(false);
 
@@ -34,10 +51,11 @@ const NavProductByCat = ({ data, catId, parent, name, categories1 }) => {
     hasNextPage,
   } = useInfiniteQuery(
     ["getProductsByMidCats", parent1],
-    ({ pageParam = 1 }) => getProductsByOptionsQuery(pageParam, JSON.parse(categories1), []),
+    ({ pageParam = 1 }) =>
+      getProductsByOptionsQuery(pageParam, categories1, []),
     {
       // enabled: false,
-      initialData: JSON.parse(data),
+      initialData: data,
       refetchOnWindowFocus: false,
       retryOnMount: false,
       refetchOnReconnect: false,
@@ -64,31 +82,35 @@ const NavProductByCat = ({ data, catId, parent, name, categories1 }) => {
               flex: 1,
               zIndex: 100,
               maxHeight: show ? screenHeight - 56 : screenHeight - 112,
-            }}>
+            }}
+          >
             <View
               style={{
                 backgroundColor: accentColor,
                 height: show ? screenHeight - 56 : screenHeight - 112,
-              }}>
+              }}
+            >
               <View
                 style={{
                   justifyContent: "flex-start",
                   alignItems: "center",
                   padding: 10,
                   backgroundColor: accentColor,
-                }}>
+                }}
+              >
                 <Text
                   style={{
                     fontSize: 15,
                     fontWeight: "500",
                     color: primaryColor,
-                  }}>
+                  }}
+                >
                   Collections
                 </Text>
               </View>
               <View style={{}}>
                 {[
-                  ...parent1.map(c => ({
+                  ...parent1.map((c) => ({
                     href: `/categories/${c._id}`,
                     name: c.name,
                     ...c,
@@ -109,32 +131,42 @@ const NavProductByCat = ({ data, catId, parent, name, categories1 }) => {
           headerShown: false,
           drawerType: "permanent",
           drawerPosition: "left",
-        }}>
-        <Drawer.Screen name='Cubicswap'>
+        }}
+      >
+        <Drawer.Screen name="Cubicswap">
           {() => (
             <ScrollView
               scrollEventThrottle={10000}
               contentContainerStyle={{
                 minHeight: "100vh",
                 maxHeight: !show ? screenHeight - 112 : screenHeight - 56,
-              }}>
-              <Flex p={3} direction='row' alignItems='center' bg={accentColor} overflow={"auto"}>
+              }}
+            >
+              <Flex
+                p={3}
+                direction="row"
+                alignItems="center"
+                bg={accentColor}
+                overflow={"auto"}
+              >
                 {!show && (
                   <Pressable
                     pr={4}
-                    justifyContent='center'
-                    alignItems='center'
+                    justifyContent="center"
+                    alignItems="center"
                     paddingHorizontal={"10px"}
-                    onPress={() => setOpen(!open)}>
+                    onPress={() => setOpen(!open)}
+                  >
                     <Box>
                       <svg
-                        xmlns='http://www.w3.org/2000/svg'
-                        height='24px'
-                        viewBox='0 0 24 24'
-                        width='20px'
-                        fill={primaryColor}>
-                        <path d='M0 0h24v24H0V0z' fill='none' />
-                        <path d='M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z' />
+                        xmlns="http://www.w3.org/2000/svg"
+                        height="24px"
+                        viewBox="0 0 24 24"
+                        width="20px"
+                        fill={primaryColor}
+                      >
+                        <path d="M0 0h24v24H0V0z" fill="none" />
+                        <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z" />
                       </svg>
                     </Box>
                   </Pressable>
@@ -144,27 +176,32 @@ const NavProductByCat = ({ data, catId, parent, name, categories1 }) => {
                     isUnderlined
                     onPress={() => {
                       router.push(`/categories/allCategories`);
-                    }}>
+                    }}
+                  >
                     <Badge backgroundColor={primaryColor} color={accentColor}>
                       All Collections
                     </Badge>
                   </Link>
                   <Box>
                     <svg
-                      xmlns='http://www.w3.org/2000/svg'
-                      height='24px'
-                      viewBox='0 0 24 24'
-                      width='20px'
-                      fill={primaryColor}>
-                      <path d='M0 0h24v24H0V0z' fill='none' />
-                      <path d='M10.02 6L8.61 7.41 13.19 12l-4.58 4.59L10.02 18l6-6-6-6z' />
+                      xmlns="http://www.w3.org/2000/svg"
+                      height="24px"
+                      viewBox="0 0 24 24"
+                      width="20px"
+                      fill={primaryColor}
+                    >
+                      <path d="M0 0h24v24H0V0z" fill="none" />
+                      <path d="M10.02 6L8.61 7.41 13.19 12l-4.58 4.59L10.02 18l6-6-6-6z" />
                     </svg>
                   </Box>
                   <Link
                     isUnderlined
                     onPress={() => {
-                      router.push(`/categories/allCategories/${topParent?._id}`);
-                    }}>
+                      router.push(
+                        `/categories/allCategories/${topParent?._id}`
+                      );
+                    }}
+                  >
                     <Badge backgroundColor={primaryColor} color={accentColor}>
                       {topParent?.name}
                     </Badge>
@@ -172,13 +209,14 @@ const NavProductByCat = ({ data, catId, parent, name, categories1 }) => {
 
                   <Box>
                     <svg
-                      xmlns='http://www.w3.org/2000/svg'
-                      height='24px'
-                      viewBox='0 0 24 24'
-                      width='20px'
-                      fill={primaryColor}>
-                      <path d='M0 0h24v24H0V0z' fill='none' />
-                      <path d='M10.02 6L8.61 7.41 13.19 12l-4.58 4.59L10.02 18l6-6-6-6z' />
+                      xmlns="http://www.w3.org/2000/svg"
+                      height="24px"
+                      viewBox="0 0 24 24"
+                      width="20px"
+                      fill={primaryColor}
+                    >
+                      <path d="M0 0h24v24H0V0z" fill="none" />
+                      <path d="M10.02 6L8.61 7.41 13.19 12l-4.58 4.59L10.02 18l6-6-6-6z" />
                     </svg>
                   </Box>
                   <Badge backgroundColor={primaryColor} color={accentColor}>
@@ -249,25 +287,40 @@ const NavProductByCat = ({ data, catId, parent, name, categories1 }) => {
         <Overlay
           isVisible={open}
           statusBarTranslucent
-          animationType='slide'
+          animationType="slide"
           fullScreen
           collapsable
           focusable
-          overlayStyle={{ backgroundColor: accentColor }}>
+          overlayStyle={{ backgroundColor: accentColor }}
+        >
           <View
             style={{
               justifyContent: "center",
-            }}>
-            <TouchableOpacity style={{ padding: 10 }} onPress={() => setOpen(!open)}>
-              <Icon size={30} type='material' name='cancel' color={primaryColor} />
+            }}
+          >
+            <TouchableOpacity
+              style={{ padding: 10 }}
+              onPress={() => setOpen(!open)}
+            >
+              <Icon
+                size={30}
+                type="material"
+                name="cancel"
+                color={primaryColor}
+              />
             </TouchableOpacity>
           </View>
-          <Text textAlign={"center"} fontWeight={"500"} my={"2"} color={primaryColor}>
+          <Text
+            textAlign={"center"}
+            fontWeight={"500"}
+            my={"2"}
+            color={primaryColor}
+          >
             {name}
           </Text>
           <ScrollView>
             {[
-              ...parent1.map(c => ({
+              ...parent1.map((c) => ({
                 href: `/categories/${c._id}`,
                 name: c.name,
               })),
@@ -279,9 +332,14 @@ const NavProductByCat = ({ data, catId, parent, name, categories1 }) => {
                   onPress={() => {
                     setOpen(!open);
                     router.push(`${c.href}`);
-                  }}>
+                  }}
+                >
                   <ListItem.Content>
-                    <ListItem.Title style={{ color: primaryColor, fontWeight: 500 }}>{c.name}</ListItem.Title>
+                    <ListItem.Title
+                      style={{ color: primaryColor, fontWeight: 500 }}
+                    >
+                      {c.name}
+                    </ListItem.Title>
                   </ListItem.Content>
                   <ListItem.Chevron color={primaryColor} />
                 </ListItem>

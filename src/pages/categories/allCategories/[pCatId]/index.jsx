@@ -1,8 +1,6 @@
+import axios from "axios";
 import dynamic from "next/dynamic";
 import React from "react";
-import { connectDB } from "../../../../../server/config/db";
-import { Category } from "../../../../../server/model/categoryModel";
-import { Product } from "../../../../../server/model/productModel";
 import CustomLoader from "../../../../components/Layout/CustomLoader";
 
 const ParentMain = dynamic(
@@ -19,85 +17,16 @@ const ParentCatLayout = (props) => {
   return <ParentMain {...props} />;
 };
 
-export async function getStaticPaths() {
-  connectDB();
-  try {
-    const categories = await Category.find({ parentCatId: null })
-      .lean()
-      .select({ _id: 1 });
-
-    const paths = categories.map((cat) => ({
-      params: { pCatId: cat._id.toString() },
-    }));
-
-    console.log(categories);
-
-    return { paths, fallback: true };
-  } catch (error) {
-    console.error(error);
-    return;
-  }
-}
-
-export async function getStaticProps(ctx) {
+export async function getServerSideProps(ctx) {
   const { pCatId } = ctx.params;
 
   try {
-    connectDB();
-
-    const mainParent = await Category.findById(pCatId).lean();
-
-    const categoriesOfParent1 = await Category.find({
-      parentCatId: pCatId,
-    }).lean();
-
-    const categoriesOfParent2 = await Category.find({
-      parentCatId: categoriesOfParent1.map((c) => c._id),
-    }).lean();
-
-    let findObj = {};
-
-    if (categoriesOfParent1[0].hasProduct) {
-      findObj = {
-        categories: { $in: categoriesOfParent1.map((c) => c._id) },
-      };
-    } else {
-      console.log("innnnnn");
-      findObj = {
-        categories: { $in: categoriesOfParent2.map((c) => c._id) },
-      };
-    }
-
-    const pageSize = 12;
-    const page = 1;
-    const count = await Product.countDocuments(findObj);
-
-    const products = await Product.find(findObj)
-      .lean()
-      .select({ _id: 1, minOrder: 1, name: 1, images: 1, price: 1, brand: 1 })
-      .limit(pageSize)
-      .skip(pageSize * (page - 1))
-      .sort({ createdAt: -1 });
+    const { data } = await axios.get(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/products/parentCategory/${pCatId}`
+    );
 
     return {
-      props: {
-        data: JSON.stringify({
-          pages: [
-            {
-              products,
-              count: products.length,
-              page,
-              pages: Math.ceil(count / pageSize),
-            },
-          ],
-          pageParams: [null],
-        }),
-        pCatId,
-        name: mainParent.name,
-        categories2: JSON.stringify(categoriesOfParent2),
-        categories1: JSON.stringify(categoriesOfParent1),
-      },
-      revalidate: 1,
+      props: { ...data },
     };
   } catch (error) {
     console.error(error);
@@ -108,6 +37,83 @@ export async function getStaticProps(ctx) {
 }
 
 export default ParentCatLayout;
+
+// export async function getStaticPaths() {
+//   connectDB();
+//   try {
+//     const categories = await Category.find({ parentCatId: null })
+//       .lean()
+//       .select({ _id: 1 });
+
+//     const paths = categories.map((cat) => ({
+//       params: { pCatId: cat._id.toString() },
+//     }));
+
+//     console.log(categories);
+
+//     return { paths, fallback: true };
+//   } catch (error) {
+//     console.error(error);
+//     return;
+//   }
+// }
+
+// connectDB();
+
+//     const mainParent = await Category.findById(pCatId).lean();
+
+//     const categoriesOfParent1 = await Category.find({
+//       parentCatId: pCatId,
+//     }).lean();
+
+//     const categoriesOfParent2 = await Category.find({
+//       parentCatId: categoriesOfParent1.map((c) => c._id),
+//     }).lean();
+
+//     let findObj = {};
+
+//     if (categoriesOfParent1[0].hasProduct) {
+//       findObj = {
+//         categories: { $in: categoriesOfParent1.map((c) => c._id) },
+//       };
+//     } else {
+//       console.log("innnnnn");
+//       findObj = {
+//         categories: { $in: categoriesOfParent2.map((c) => c._id) },
+//       };
+//     }
+
+//     const pageSize = 12;
+//     const page = 1;
+//     const count = await Product.countDocuments(findObj);
+
+//     const products = await Product.find(findObj)
+//       .lean()
+//       .select({ _id: 1, minOrder: 1, name: 1, images: 1, price: 1, brand: 1 })
+//       .limit(pageSize)
+//       .skip(pageSize * (page - 1))
+//       .sort({ createdAt: -1 });
+
+//     return {
+//       props: {
+//         data: JSON.stringify({
+//           pages: [
+//             {
+//               products,
+//               count: products.length,
+//               page,
+//               pages: Math.ceil(count / pageSize),
+//             },
+//           ],
+//           pageParams: [null],
+//         }),
+//         pCatId,
+//         name: mainParent.name,
+//         categories2: JSON.stringify(categoriesOfParent2),
+//         categories1: JSON.stringify(categoriesOfParent1),
+//       },
+//       revalidate: 1,
+//     };
 
 // export const getProductsByOptionsQuery = async (
 //   pageParam,

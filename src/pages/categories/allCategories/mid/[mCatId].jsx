@@ -1,8 +1,6 @@
+import axios from "axios";
 import dynamic from "next/dynamic";
 import React from "react";
-import { connectDB } from "../../../../../server/config/db";
-import { Category } from "../../../../../server/model/categoryModel";
-import { Product } from "../../../../../server/model/productModel";
 import CustomLoader from "../../../../components/Layout/CustomLoader";
 
 const MidCat = dynamic(
@@ -18,79 +16,16 @@ const MidCatLayout = (props) => {
   return <MidCat {...props} />;
 };
 
-export async function getStaticPaths() {
-  connectDB();
-  try {
-    const categories = await Category.find({
-      parentCatId: { $ne: null },
-      hasProduct: false,
-    })
-      .lean()
-      .select({ _id: 1 });
-
-    const paths = categories.map((cat) => ({
-      params: { mCatId: cat._id.toString() },
-    }));
-
-    console.log(categories);
-
-    return { paths, fallback: true };
-  } catch (error) {
-    console.error(error);
-    return;
-  }
-}
-
-export async function getStaticProps(ctx) {
+export async function getServerSideProps(ctx) {
   const { mCatId } = ctx.params;
 
   try {
-    connectDB();
-
-    const mainParent = await Category.findById(mCatId).lean();
-
-    const parent = await Category.findById(
-      mainParent.parentCatId.toString()
-    ).lean();
-
-    const categoriesOfParent1 = await Category.find({
-      parentCatId: mCatId,
-    }).lean();
-
-    const pageSize = 12;
-    const page = 1;
-    const count = await Product.countDocuments({
-      categories: categoriesOfParent1.map((c) => c._id),
-    });
-
-    const products = await Product.find({
-      categories: { $in: categoriesOfParent1.map((c) => c._id) },
-    })
-      .lean()
-      .select({ _id: 1, minOrder: 1, name: 1, images: 1, price: 1, brand: 1 })
-      .limit(pageSize)
-      .skip(pageSize * (page - 1))
-      .sort({ createdAt: -1 });
+    const { data } = await axios.get(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/products//midCategory/${mCatId}`
+    );
 
     return {
-      props: {
-        data: JSON.stringify({
-          pages: [
-            {
-              products,
-              count: products.length,
-              page,
-              pages: Math.ceil(count / pageSize),
-            },
-          ],
-          pageParams: [null],
-        }),
-        mCatId,
-        name: mainParent.name,
-        parent: JSON.stringify(parent),
-        categories1: JSON.stringify(categoriesOfParent1),
-      },
-      revalidate: 1,
+      props: { ...data },
     };
   } catch (error) {
     console.error(error);
@@ -101,6 +36,77 @@ export async function getStaticProps(ctx) {
 }
 
 export default MidCatLayout;
+
+// export async function getStaticPaths() {
+//   connectDB();
+//   try {
+//     const categories = await Category.find({
+//       parentCatId: { $ne: null },
+//       hasProduct: false,
+//     })
+//       .lean()
+//       .select({ _id: 1 });
+
+//     const paths = categories.map((cat) => ({
+//       params: { mCatId: cat._id.toString() },
+//     }));
+
+//     console.log(categories);
+
+//     return { paths, fallback: true };
+//   } catch (error) {
+//     console.error(error);
+//     return;
+//   }
+// }
+
+// connectDB();
+
+//   const mainParent = await Category.findById(mCatId).lean();
+
+//   const parent = await Category.findById(
+//     mainParent.parentCatId.toString()
+//   ).lean();
+
+//   const categoriesOfParent1 = await Category.find({
+//     parentCatId: mCatId,
+//   }).lean();
+
+//   const pageSize = 12;
+//   const page = 1;
+//   const count = await Product.countDocuments({
+//     categories: categoriesOfParent1.map((c) => c._id),
+//   });
+
+//   const products = await Product.find({
+//     categories: { $in: categoriesOfParent1.map((c) => c._id) },
+//   })
+//     .lean()
+//     .select({ _id: 1, minOrder: 1, name: 1, images: 1, price: 1, brand: 1 })
+//     .limit(pageSize)
+//     .skip(pageSize * (page - 1))
+//     .sort({ createdAt: -1 });
+
+//   return {
+//     props: {
+//       data: JSON.stringify({
+//         pages: [
+//           {
+//             products,
+//             count: products.length,
+//             page,
+//             pages: Math.ceil(count / pageSize),
+//           },
+//         ],
+//         pageParams: [null],
+//       }),
+//       mCatId,
+//       name: mainParent.name,
+//       parent: JSON.stringify(parent),
+//       categories1: JSON.stringify(categoriesOfParent1),
+//     },
+//     revalidate: 1,
+//   };
 
 // const NavProductByCat = ({ data, catId, parent, name, categories1 }) => {
 //   const [parent1] = useState(JSON.parse(categories1));

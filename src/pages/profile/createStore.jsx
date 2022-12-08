@@ -1,3 +1,4 @@
+import axios from "axios";
 import { Formik } from "formik";
 import jwtDecode from "jwt-decode";
 import router from "next/router";
@@ -6,8 +7,6 @@ import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { Button, HelperText, Snackbar, TextInput } from "react-native-paper";
 import { useMutation } from "react-query";
-import { connectDB } from "../../../server/config/db";
-import { Store } from "../../../server/model/storeModel";
 import { client } from "../../client";
 import Layout from "../../components/Layout";
 import { UserState } from "../../context/state/userState";
@@ -262,15 +261,14 @@ export async function getServerSideProps(ctx) {
   }
 
   try {
-    connectDB();
-    const existingStore = await Store.findOne({
-      owner: decode?.id,
-    }).lean();
+    const { data } = await axios.get(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/products/store/isExists`
+    );
 
-    if (existingStore) {
+    if (data.existingStore) {
       return {
         redirect: {
-          destination: `/profile/myStore/${existingStore._id.toString()}/update`,
+          destination: `/profile/myStore/${data.existingStore._id.toString()}/update`,
           permanent: false,
         },
       };
