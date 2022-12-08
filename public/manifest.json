@@ -1,0 +1,29 @@
+{
+  "display": "standalone",
+  "lang": "en",
+  "name": "Cubicswap",
+  "short_name": "Cubicswap",
+  "start_url": "/?utm_source=web_app_manifest",
+  "icons": [
+    {
+      "src": "/img/cubicSwap-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/img/cubicSwap-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/img/cubicSwap-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "background_color": "#eeeeee",
+  "theme_color": "#eeeeee"
+}

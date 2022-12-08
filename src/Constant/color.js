@@ -1,0 +1,11 @@
+export const primaryColor = "#f0bf4c";
+export const lightPrimaryColor = "#fddc5c";
+export const darkPrimaryColor = "#b45309";
+export const accentColor = "#262626";
+export const lightAccentColor = "#525252";
+export const textColor = "#fafafa";
+export const lightText = "#d4d4d4";
+export const darkText = "#171717";
+export const deleteColor = "#ff6161";
+export const linkColor = "#007185";
+export const successColor = "#42ba96";

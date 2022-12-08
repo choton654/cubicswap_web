@@ -1,0 +1,43 @@
+{
+  "packageId": "com.herokuapp.start__up.twa",
+  "host": "start--up.herokuapp.com",
+  "name": "Cubicswap",
+  "launcherName": "Cubicswap",
+  "display": "standalone",
+  "themeColor": "#EEEEEE",
+  "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#EEEEEE",
+  "enableNotifications": true,
+  "startUrl": "/?utm_source=web_app_manifest",
+  "iconUrl": "http://start--up.herokuapp.com/img/online-shopping.png",
+  "maskableIconUrl": "http://start--up.herokuapp.com/img/online-shopping.png",
+  "monochromeIconUrl": "http://start--up.herokuapp.com/img/online-shopping.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "D:\\projects\\my_Project\\android.keystore",
+    "alias": "cubicswap"
+  },
+  "appVersionName": "1",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "http://start--up.herokuapp.com/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "orientation": "default",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "appVersion": "1"
+}

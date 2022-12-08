@@ -1,0 +1,28 @@
+version: "3.4"
+
+services:
+  mongo:
+    container_name: mymongo
+    image: mongo:latest
+    networks:
+      - webnet
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo:/data/db
+
+  web:
+    image: rskecom
+    networks:
+      - webnet
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+volumes:
+  mongo:
+networks:
+  webnet:

@@ -1,0 +1,69 @@
+todo:
+1. update store details, vedios, //
+
+2. update product details, image, vedios and delete product,
+
+3. add relation with category store and product, //
+
+4. wholesale product purchase functionality, //
+
+5. show all store in map at a time and highlight current store,
+
+6. show navigation to selected store from current user location in map,
+
+7. payment getway functionality,
+
+8. send message functionality to user and wholeseller after creating an order,
+
+9. send message functionality to user after dispatch an order,
+
+10.forget password functionality, //
+
+11.add awareness for creating a message to seller and user
+
+12.add rating and review functionality for store and product
+
+13.show related products in product details page //
+
+14.send order from single product page
+
+15.mark all order as asking initialy
+
+16.add views in product
+
+17.order graph in per store
+
+18.inventory management
+
+Go to market strategy:-
+
+    Our strategy is to grab the opportunity of this digital era and make connections with any kind of retailers and
+    whole sellers as much as possible and make their buisnessess online and also promote their buisnessess.
+    Whole sellers and retailers can make an online store in our app and describe their buisnessess. They can add 
+    various kind of products they want to sell to their online store so that their customers can grab the latest 
+    updates or realeases of new products.
+
+Elevator Pitch:-
+
+    “Hi, I’m [NAME], the founder of Cubic Swap. We make it easy to say ‘thank you’ at work. Cubic Swap helps retailers and whole sellers businesses quickly and easily save money on their credit card processing costs by comparing the leading options in the market. It’s completely free to the end user, there are no obligations and takes just one minute to do. Can we set up a time to chat tomorrow?”
+
+    Why it works: There’s no frills here — but you have enough information to consider setting up a meeting. This approach is more effective via email or Linkedin.
+    
+
+
+Customer traction:-
+
+    A successful business solves problems for its customers. And these don’t have to be big problems— you can solve very small and manageable problems for your customers. But the customer must have a pain point that purchasing your product will help them fix.
+
+Any easy way to focus on the problem you’re trying to solve is by asking yourself, “What is the behavior I’m trying to change?” If your business were successful, what would people do differently?
+
+If your business is solving the right problem for people, you will continue growing and bringing on new customers.
+
+Have you ever caught yourself focusing on the number of website visitors you have or how many people downloaded your free white paper? If so, then you’re probably distracted by vanity metrics.
+
+Vanity metrics are things that sound good on the surface but don’t provide any actionable insights into how your business is growing. The real problem is that vanity metrics don’t provide meaningful data on customer traction — sales do.
+
+For instance, growing your email list is great, but how many of those subscribers are you converting to customers? That is the real data you want to track.
+    
+
+

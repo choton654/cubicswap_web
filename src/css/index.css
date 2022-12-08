@@ -1,0 +1,23 @@
+@media screen and (min-width: 62em) {
+  /* width */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  /* Track */
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  /* Handle */
+  ::-webkit-scrollbar-thumb {
+    background: #f0bf4c;
+    border-radius: 10px;
+  }
+
+  /* Handle on hover */
+  ::-webkit-scrollbar-thumb:hover {
+    background: #fddc5c;
+  }
+}
