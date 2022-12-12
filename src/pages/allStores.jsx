@@ -39,22 +39,23 @@ export default AllStores;
 const styles = StyleSheet.create({});
 
 export async function getServerSideProps(ctx) {
-  const { token } = parseCookies(ctx);
+  // const { token } = parseCookies(ctx);
 
-  if (!token) {
-    return {
-      notFound: true,
-    };
-  }
-  const decode = jwt_decode(token);
+  // console.log("----admin----", ctx);
+  // console.log("----admin----", token, decode);
+  // if (!token) {
+  //   return {
+  //     notFound: true,
+  //   };
+  // }
+  // const decode = jwt_decode(token);
+  // if (decode.role !== "admin") {
+  //   return {
+  //     notFound: true,
+  //   };
+  // }
 
-  if (decode.role !== "admin") {
-    return {
-      notFound: true,
-    };
-  }
-
-  const { getAllStores } = await ssrClient(token).request(
+  const { getAllStores } = await ssrClient("admin").request(
     gql`
       query ExampleQuery {
         getAllStores {
@@ -67,7 +68,7 @@ export async function getServerSideProps(ctx) {
 
   return {
     props: {
-      token,
+      // token,
       getAllStores,
     },
   };

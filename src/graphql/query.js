@@ -134,8 +134,8 @@ export const MY_CHATLIST = gql`
 `;
 
 export const GET_MY_STORE = gql`
-  query getMyStore($getMyStoreFilter: FilterFindOneStoreInput!) {
-    getMyStore(filter: $getMyStoreFilter) {
+  query getMyStore($filter: FilterFindOneStoreInput!) {
+    getMyStore(filter: $filter) {
       _id
       storeName
       aboutStore
@@ -239,7 +239,6 @@ export const GET_MY_PRODUCT_DETAILS = gql`
       description
       brand
       inStock
-      category
       categories {
         name
         _id
