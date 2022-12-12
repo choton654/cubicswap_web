@@ -2,34 +2,60 @@ import * as ImagePicker from "expo-image-picker";
 import { useFormik } from "formik";
 import { gql } from "graphql-request";
 import jwt_decode from "jwt-decode";
+import { useRouter } from "next/router";
 import { parseCookies } from "nookies";
 import React, { useEffect, useState } from "react";
-import { FlatList, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  FlatList,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { BottomSheet, Icon, Image, ListItem } from "react-native-elements";
 import { Button, HelperText, Snackbar, TextInput } from "react-native-paper";
-import { useMutation } from "react-query";
+import { useMutation, useQuery } from "react-query";
 import { v4 as uuidv4 } from "uuid";
 import { client, ssrClient } from "../../../../../client";
 import Layout from "../../../../../components/Layout";
-import { accentColor, deleteColor, lightText, primaryColor, textColor } from "../../../../../Constant/color";
+import CustomLoader from "../../../../../components/Layout/CustomLoader";
+import {
+  accentColor,
+  deleteColor,
+  lightText,
+  primaryColor,
+  textColor,
+} from "../../../../../Constant/color";
 import { ScreenState } from "../../../../../context/state/screenState";
 import { UserState } from "../../../../../context/state/userState";
-import { CREATE_ONE_PRODUCT, UPDATE_ONE_PRODUCT } from "../../../../../graphql/mutation";
+import {
+  CREATE_ONE_PRODUCT,
+  UPDATE_ONE_PRODUCT,
+} from "../../../../../graphql/mutation";
 import { GET_MY_PRODUCT_DETAILS } from "../../../../../graphql/query";
 
-const updateProduct = async variables => {
-  const { updateOneProduct } = await client.request(UPDATE_ONE_PRODUCT, variables);
+const updateProduct = async (variables) => {
+  const { updateOneProduct } = await client.request(
+    UPDATE_ONE_PRODUCT,
+    variables
+  );
   return updateOneProduct;
 };
 
-const addProduct = async variables => {
-  const { createOneProduct } = await client.request(CREATE_ONE_PRODUCT, variables);
+const addProduct = async (variables) => {
+  const { createOneProduct } = await client.request(
+    CREATE_ONE_PRODUCT,
+    variables
+  );
   return createOneProduct;
 };
 
-function AddProduct({ storeId, productId, data: { getMyProductDetails: product }, storeCategories }) {
-  console.log(storeCategories, product);
-
+function AddProduct() {
+  const router = useRouter();
+  const { storeId, productId } = router.query;
+  console.log("---router---", router);
   const {
     state: {
       user: { _id },
@@ -38,6 +64,87 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
 
   const { show, md, lgSidebar, smSidebar, screenWidth } = ScreenState();
 
+  const { data, isLoading, isError, isSuccess } = useQuery(
+    "addStore",
+    async () => {
+      const data = await client.request(
+        gql`
+          query Query($filter: FilterFindOneStoreInput!) {
+            getMyStore(filter: $filter) {
+              categories {
+                name
+                _id
+              }
+            }
+          }
+        `,
+        {
+          filter: {
+            _id: storeId,
+          },
+        }
+      );
+      console.log("---storedata---", data);
+
+      return data;
+    },
+    {
+      retry: false,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+      onSuccess: (d) => {
+        console.log(d);
+        setStoreCategories(d.getMyStore);
+      },
+      onerror: (e) => {
+        console.error(e);
+      },
+    }
+  );
+  const { isLoading: pLoading } = useQuery(
+    "prodDetails",
+    async () => {
+      const data = await client.request(GET_MY_PRODUCT_DETAILS, {
+        user: _id,
+        productId,
+      });
+      console.log("---storedata---", data);
+
+      return data;
+    },
+    {
+      retry: false,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+      enabled: !!productId,
+      onSuccess: (d) => {
+        console.log(d);
+        setProduct(d.getMyProductDetails);
+        const product = d.getMyProductDetails;
+        formik.setValues({
+          name: product?.name ? product.name : "",
+          brand: product?.brand ? product.brand : "",
+          category: product?.categories.length > 0 ? product.categories[0] : {},
+          categories: storeCategories ? storeCategories : [],
+          description: product?.description ? product.description : "",
+          price: product?.price ? product.price : 1,
+          unit: product?.unit ? product.unit : "Piece",
+          inStock: product?.inStock ? product.inStock : 1,
+          minOrder: product?.minOrder ? product.minOrder : 1,
+          pricePerUnit: product?.price ? product.price : 1,
+          qty: product?.minOrder ? product.minOrder : 1,
+          fieldName: "",
+          fieldValue: "",
+        });
+      },
+      onerror: (e) => {
+        console.error(e);
+      },
+    }
+  );
+
+  const [storeCategories, setStoreCategories] = useState(null);
+  const [product, setProduct] = useState(null);
   const [error, setError] = useState("");
 
   const [loading, setloading] = useState(false);
@@ -50,7 +157,8 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
   const [showDetails, setShowDetails] = useState(false);
 
   const onToggleDetails = () => setShowDetails(!showDetails);
-  const onToggleSellingCapacity = () => setShowSellingCapacity(!showSellingCapacity);
+  const onToggleSellingCapacity = () =>
+    setShowSellingCapacity(!showSellingCapacity);
 
   const onToggleSnackBar = () => setsnackVisible(!snackVisible);
 
@@ -74,7 +182,7 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
     isError: updateMsgError,
   } = useMutation(updateProduct, {
     onSuccess: () => setloading(false),
-    onError: e => console.error(e),
+    onError: (e) => console.error(e),
   });
 
   const formik = useFormik({
@@ -95,7 +203,18 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
     },
 
     onSubmit: async (values, { resetForm }) => {
-      const { name, brand, category, description, inStock, price, minOrder, unit, pricePerUnit, qty } = values;
+      const {
+        name,
+        brand,
+        category,
+        description,
+        inStock,
+        price,
+        minOrder,
+        unit,
+        pricePerUnit,
+        qty,
+      } = values;
       console.log(values);
 
       if (rangePerUnit.length > 4) {
@@ -116,7 +235,9 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
 
       if (
         rangePerUnit.find((e, i) => parseFloat(e.qty) < parseFloat(minOrder)) ||
-        rangePerUnit.find((e, i) => parseFloat(e.pricePerUnit) > parseFloat(price))
+        rangePerUnit.find(
+          (e, i) => parseFloat(e.pricePerUnit) > parseFloat(price)
+        )
       ) {
         setError("invalid selling capacity");
         return;
@@ -138,7 +259,7 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
         }
 
         const newImages = await Promise.all(
-          images.map(file => {
+          images.map((file) => {
             let newpic;
 
             let data = {
@@ -147,15 +268,18 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
               api_key: process.env.CLOUDNARY_API_KEY,
             };
 
-            return fetch(`https://api.cloudinary.com/v1_1/choton/image/upload`, {
-              body: JSON.stringify(data),
-              headers: {
-                "content-type": "application/json",
-              },
-              method: "POST",
-            })
-              .then(res => res.json())
-              .then(data => {
+            return fetch(
+              `https://api.cloudinary.com/v1_1/choton/image/upload`,
+              {
+                body: JSON.stringify(data),
+                headers: {
+                  "content-type": "application/json",
+                },
+                method: "POST",
+              }
+            )
+              .then((res) => res.json())
+              .then((data) => {
                 const imageData = data;
                 // newpic = `https://res.cloudinary.com/choton/image/upload/$imgwidth_500/$imgheight_500/$border_10/e_trim/if_w_gte_h,w_$imgwidth_sub_$border_mul_2/if_else,h_$imgheight_sub_$border_mul_2/bo_10px_solid_rgb:ffffff00/c_pad,w_$imgwidth,h_$imgheight,b_rgb:ffffff/q_auto,f_auto/${
                 //   imageData.secure_url.split("/")[6]
@@ -192,13 +316,13 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
               images: newImages,
               storeId,
               minOrder,
-              rangePerUnit: rangePerUnit.map(r => ({
+              rangePerUnit: rangePerUnit.map((r) => ({
                 pricePerUnit: r.pricePerUnit,
                 qty: r.qty,
               })),
               details:
                 productDetails.length > 0
-                  ? productDetails.map(r => ({
+                  ? productDetails.map((r) => ({
                       fieldName: r.fieldName,
                       fieldValue: r.fieldValue,
                     }))
@@ -206,8 +330,8 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
             },
           },
           {
-            onError: e => console.error(e),
-            onSuccess: d => {
+            onError: (e) => console.error(e),
+            onSuccess: (d) => {
               console.log(d);
               setImages([]);
               resetForm();
@@ -249,19 +373,19 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
               price,
               details:
                 productDetails.length > 0
-                  ? productDetails.map(r => ({
+                  ? productDetails.map((r) => ({
                       fieldName: r.fieldName,
                       fieldValue: r.fieldValue,
                     }))
                   : [],
-              rangePerUnit: rangePerUnit.map(r => ({
+              rangePerUnit: rangePerUnit.map((r) => ({
                 pricePerUnit: r.pricePerUnit,
                 qty: r.qty,
               })),
             },
           },
           {
-            onError: e => console.error(e),
+            onError: (e) => console.error(e),
           }
         );
         // .then((d) => console.log(d))
@@ -273,7 +397,7 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
 
   const [rangePerUnit, setRangePerUnit] = useState(
     product?.rangePerUnit
-      ? product?.rangePerUnit.map(r => ({
+      ? product?.rangePerUnit.map((r) => ({
           id: uuidv4(),
           pricePerUnit: r.pricePerUnit,
           qty: r.qty,
@@ -289,7 +413,7 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
 
   const [productDetails, setProductDetails] = useState(
     product?.details
-      ? product?.details.map(p => ({
+      ? product?.details.map((p) => ({
           id: uuidv4(),
           fieldName: p.fieldName,
           fieldValue: p.fieldValue,
@@ -300,7 +424,8 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
   useEffect(() => {
     (async () => {
       if (Platform.OS !== "web") {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        const { status } =
+          await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== "granted") {
           alert("Sorry, we need camera roll permissions to make this work!");
         }
@@ -322,6 +447,10 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
     }
   };
 
+  if (isLoading || pLoading) {
+    return <CustomLoader />;
+  }
+
   return (
     <Layout title={product ? "Update Product" : "Add Product"}>
       {addProductMutation.isError && (
@@ -335,7 +464,8 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
             justifyContent: "center",
             alignItems: "center",
             padding: 8,
-          }}>
+          }}
+        >
           <Text style={{ textAlign: "center", fontSize: "1rem" }}>
             {product ? `Update product details` : `Add your product details`}
           </Text>
@@ -343,11 +473,13 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
 
         {!product && (
           <View style={{ paddingTop: 5 }}>
-            <Text style={{ textAlign: "center", fontSize: ".8rem" }}>Upload Image</Text>
+            <Text style={{ textAlign: "center", fontSize: ".8rem" }}>
+              Upload Image
+            </Text>
             {images.length > 0 && (
               <TouchableOpacity onPress={() => setImages([])}>
                 <Text style={{ textAlign: "center" }}>
-                  <Icon name='close' type='material' />
+                  <Icon name="close" type="material" />
                 </Text>
               </TouchableOpacity>
             )}
@@ -357,12 +489,14 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                 borderStyle: "dashed",
                 borderWidth: 2,
                 margin: 5,
-              }}>
+              }}
+            >
               <ScrollView
                 centerContent
                 contentContainerStyle={{
                   flex: 1,
-                }}>
+                }}
+              >
                 {images.length > 0 && (
                   <FlatList
                     contentContainerStyle={{ width: "100%" }}
@@ -377,15 +511,22 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                           alignItems: "center",
                           marginVertical: 5,
                           backgroundColor: "#fff",
-                        }}>
-                        <TouchableOpacity onPress={() => setImages(images.filter(img => img.id !== item.id))}>
+                        }}
+                      >
+                        <TouchableOpacity
+                          onPress={() =>
+                            setImages(
+                              images.filter((img) => img.id !== item.id)
+                            )
+                          }
+                        >
                           <Text style={{ textAlign: "center" }}>
-                            <Icon name='close' type='material' />
+                            <Icon name="close" type="material" />
                           </Text>
                         </TouchableOpacity>
                         <Image
                           transition
-                          alt='pic'
+                          alt="pic"
                           source={{ uri: item.uri }}
                           style={{
                             width: 200,
@@ -406,8 +547,12 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                     marginVertical: 8,
                     padding: 10,
                     borderRadius: 5,
-                  }}>
-                  <Text style={{ color: primaryColor, fontSize: 15 }} onPress={pickImage}>
+                  }}
+                >
+                  <Text
+                    style={{ color: primaryColor, fontSize: 15 }}
+                    onPress={pickImage}
+                  >
                     Pick an image from camera roll
                   </Text>
                 </TouchableOpacity>
@@ -418,13 +563,14 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
 
         {error.length > 0 && (
           <HelperText
-            type='error'
+            type="error"
             visible={error.length > 0}
             style={{
               backgroundColor: accentColor,
               textAlign: "center",
               paddingVertical: 5,
-            }}>
+            }}
+          >
             {error}
           </HelperText>
         )}
@@ -436,12 +582,14 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                 backgroundColor: accentColor,
                 borderColor: "#aaa",
                 borderWidth: 2,
-              }}>
+              }}
+            >
               <Text
                 style={{
                   color: primaryColor,
                   fontWeight: "500",
-                }}>
+                }}
+              >
                 {Object.keys(formik.values.category).length !== 0
                   ? formik.values.category.name
                   : "Select Category *"}
@@ -454,24 +602,28 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                 width: screenWidth,
                 marginHorizontal: "auto",
                 overflow: "scroll",
-              }}>
+              }}
+            >
               <View
                 style={{
                   justifyContent: "center",
                   alignItems: "center",
-                }}>
+                }}
+              >
                 <TouchableOpacity
                   onPress={closeMenu}
                   style={{
                     backgroundColor: "#aaa",
                     width: "100%",
-                  }}>
+                  }}
+                >
                   <Text style={{ textAlign: "center" }}>
-                    <Icon name='close' type='material' />
+                    <Icon name="close" type="material" />
                   </Text>
                 </TouchableOpacity>
               </View>
-              {storeCategories.categories.length > 0 &&
+              {storeCategories &&
+                storeCategories.categories.length > 0 &&
                 storeCategories.categories.map((cat, i) => (
                   <ListItem
                     key={i}
@@ -482,13 +634,15 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                     onPress={() => {
                       formik.setFieldValue("category", cat);
                       closeMenu();
-                    }}>
+                    }}
+                  >
                     <ListItem.Content>
                       <ListItem.Title
                         style={{
                           color: accentColor,
                           fontWeight: "500",
-                        }}>
+                        }}
+                      >
                         {cat.name}
                       </ListItem.Title>
                     </ListItem.Content>
@@ -497,14 +651,14 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
             </BottomSheet>
             <TextInput
               dense
-              label='Name *'
+              label="Name *"
               onChangeText={formik.handleChange("name")}
               onBlur={formik.handleBlur("name")}
               value={formik.values.name}
             />
             <TextInput
               dense
-              label='Brand *'
+              label="Brand *"
               onChangeText={formik.handleChange("brand")}
               onBlur={formik.handleBlur("brand")}
               value={formik.values.brand}
@@ -512,32 +666,35 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
 
             <TextInput
               dense
-              label='Unit of your product *'
+              label="Unit of your product *"
               onChangeText={formik.handleChange("unit")}
               onBlur={formik.handleBlur("unit")}
               value={formik.values.unit}
             />
             <TextInput
-              label='Price *'
-              left={<TextInput.Affix text='₹ ' />}
+              label="Price *"
+              left={<TextInput.Affix text="₹ " />}
               onBlur={formik.handleBlur("price")}
               value={formik.values.price}
-              keyboardType='numeric'
-              onChangeText={e => {
+              keyboardType="numeric"
+              onChangeText={(e) => {
                 if (isNaN(parseFloat(Number(e)))) {
                   return;
                 }
 
                 formik.setFieldValue("price", Number(e));
                 formik.setFieldValue("pricePerUnit", Number(e));
-                setRangePerUnit([{ ...rangePerUnit[0], pricePerUnit: Number(e) }, ...rangePerUnit.slice(1)]);
+                setRangePerUnit([
+                  { ...rangePerUnit[0], pricePerUnit: Number(e) },
+                  ...rangePerUnit.slice(1),
+                ]);
               }}
             />
 
             <TextInput
               dense
-              label='InStock *'
-              onChangeText={e => {
+              label="InStock *"
+              onChangeText={(e) => {
                 if (isNaN(parseFloat(Number(e)))) {
                   return;
                 }
@@ -545,28 +702,31 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
               }}
               onBlur={formik.handleBlur("inStock")}
               value={formik.values.inStock}
-              keyboardType='numeric'
+              keyboardType="numeric"
             />
 
             <TextInput
               dense
-              label='Minimum Order *'
-              onChangeText={e => {
+              label="Minimum Order *"
+              onChangeText={(e) => {
                 if (isNaN(parseFloat(Number(e)))) {
                   return;
                 }
                 formik.setFieldValue("minOrder", Number(e));
                 formik.setFieldValue("qty", Number(e));
-                setRangePerUnit([{ ...rangePerUnit[0], qty: Number(e) }, ...rangePerUnit.slice(1)]);
+                setRangePerUnit([
+                  { ...rangePerUnit[0], qty: Number(e) },
+                  ...rangePerUnit.slice(1),
+                ]);
               }}
               onBlur={formik.handleBlur("minOrder")}
               value={formik.values.minOrder}
-              keyboardType='numeric'
+              keyboardType="numeric"
             />
 
             <TextInput
               dense
-              label='Description *'
+              label="Description *"
               multiline
               numberOfLines={5}
               onChangeText={formik.handleChange("description")}
@@ -580,12 +740,14 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                 backgroundColor: accentColor,
                 borderColor: "#aaa",
                 borderWidth: 2,
-              }}>
+              }}
+            >
               <Text
                 style={{
                   color: primaryColor,
                   fontWeight: "500",
-                }}>
+                }}
+              >
                 Add Selling Capacity
               </Text>
             </Button>
@@ -599,7 +761,8 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                   borderWidth: 2,
                   padding: 10,
                   backgroundColor: textColor,
-                }}>
+                }}
+              >
                 {rangePerUnit.length > 0 &&
                   rangePerUnit.map((r, i) => (
                     <View
@@ -610,28 +773,45 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                         padding: 4,
                         backgroundColor: accentColor,
                         borderRadius: 10,
-                      }}>
+                      }}
+                    >
                       <View
                         style={{
                           flexDirection: "row",
                           flex: 4,
                           justifyContent: "space-around",
-                        }}>
+                        }}
+                      >
                         <Text style={{ color: textColor, marginRight: 5 }}>
                           PricePerUnit :{" "}
-                          <Text style={{ fontWeight: "700", color: primaryColor }}>₹ {r.pricePerUnit} ;</Text>
+                          <Text
+                            style={{ fontWeight: "700", color: primaryColor }}
+                          >
+                            ₹ {r.pricePerUnit} ;
+                          </Text>
                         </Text>
                         <Text style={{ color: textColor }}>
                           Qty : {">="}
-                          <Text style={{ fontWeight: "700", color: primaryColor }}> {r.qty}</Text>
+                          <Text
+                            style={{ fontWeight: "700", color: primaryColor }}
+                          >
+                            {" "}
+                            {r.qty}
+                          </Text>
                         </Text>
                       </View>
                       {i !== 0 && (
                         <TouchableOpacity>
                           <ListItem.Chevron
-                            onPress={() => setRangePerUnit(rangePerUnit.filter((notr, i) => notr.id !== r.id))}
-                            name='delete'
-                            type='material'
+                            onPress={() =>
+                              setRangePerUnit(
+                                rangePerUnit.filter(
+                                  (notr, i) => notr.id !== r.id
+                                )
+                              )
+                            }
+                            name="delete"
+                            type="material"
                             size={15}
                             color={deleteColor}
                             style={{ marginTop: 2, marginRight: 5 }}
@@ -643,8 +823,8 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                 <View style={{ flexDirection: "column" }}>
                   <TextInput
                     dense
-                    label='Price per unit *'
-                    onChangeText={e => {
+                    label="Price per unit *"
+                    onChangeText={(e) => {
                       if (isNaN(parseFloat(Number(e)))) {
                         return;
                       }
@@ -652,14 +832,14 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                     }}
                     onBlur={formik.handleBlur("pricePerUnit")}
                     value={formik.values.pricePerUnit}
-                    left={<TextInput.Affix text='₹ ' />}
-                    keyboardType='numeric'
+                    left={<TextInput.Affix text="₹ " />}
+                    keyboardType="numeric"
                   />
                   <TextInput
                     dense
-                    label='Selling range *'
-                    keyboardType='numeric'
-                    onChangeText={e => {
+                    label="Selling range *"
+                    keyboardType="numeric"
+                    onChangeText={(e) => {
                       if (isNaN(parseFloat(Number(e)))) {
                         return;
                       }
@@ -673,15 +853,24 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                     onPress={() => {
                       if (
                         rangePerUnit.find(
-                          v => v.pricePerUnit === formik.values.pricePerUnit || v.qty === formik.values.qty
+                          (v) =>
+                            v.pricePerUnit === formik.values.pricePerUnit ||
+                            v.qty === formik.values.qty
                         )
                       )
                         return;
-                      if (formik.values.pricePerUnit < 0 || formik.values.qty < 0) return;
+                      if (
+                        formik.values.pricePerUnit < 0 ||
+                        formik.values.qty < 0
+                      )
+                        return;
                       if (
                         parseFloat(formik.values.pricePerUnit) >
-                          parseFloat(rangePerUnit[rangePerUnit.length - 1].pricePerUnit) ||
-                        parseFloat(formik.values.qty) < parseFloat(rangePerUnit[rangePerUnit.length - 1].qty)
+                          parseFloat(
+                            rangePerUnit[rangePerUnit.length - 1].pricePerUnit
+                          ) ||
+                        parseFloat(formik.values.qty) <
+                          parseFloat(rangePerUnit[rangePerUnit.length - 1].qty)
                       ) {
                         console.log(
                           parseFloat(rangePerUnit[rangePerUnit.length - 1]),
@@ -703,7 +892,8 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
 
                       // formik.setFieldValue("pricePerUnit", 0);
                       // formik.setFieldValue("qty", 1);
-                    }}>
+                    }}
+                  >
                     Set Selling Capacity
                   </Button>
                 </View>
@@ -716,12 +906,14 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                 backgroundColor: accentColor,
                 borderColor: "#aaa",
                 borderWidth: 2,
-              }}>
+              }}
+            >
               <Text
                 style={{
                   color: primaryColor,
                   fontWeight: "500",
-                }}>
+                }}
+              >
                 Add Product Details
               </Text>
             </Button>
@@ -736,40 +928,56 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                   padding: 10,
                   gridGap: 10,
                   backgroundColor: textColor,
-                }}>
+                }}
+              >
                 {productDetails.length > 0 && (
                   <View
                     style={{
                       // flexDirection: "row",
                       justifyContent: "space-between",
-                    }}>
+                    }}
+                  >
                     <Text
                       style={{
                         textAlign: "center",
                         fontWeight: "500",
                         fontSize: 15,
-                      }}>
+                      }}
+                    >
                       All Details
                     </Text>
                     {productDetails.map((p, i) => (
-                      <View key={i} style={{ gridGap: 5, justifyContent: "center" }}>
+                      <View
+                        key={i}
+                        style={{ gridGap: 5, justifyContent: "center" }}
+                      >
                         <Icon
-                          type='material'
-                          name='cancel'
+                          type="material"
+                          name="cancel"
                           size={15}
                           onPress={() =>
-                            setProductDetails(productDetails.filter(np => np.id.toString() !== p.id.toString()))
+                            setProductDetails(
+                              productDetails.filter(
+                                (np) => np.id.toString() !== p.id.toString()
+                              )
+                            )
                           }
                         />
                         <TextInput
                           dense
-                          label='Enter field name'
+                          label="Enter field name"
                           value={p.fieldName}
-                          onChangeText={e => {
-                            if (productDetails.some(np => np.id.toString() === p.id.toString())) {
+                          onChangeText={(e) => {
+                            if (
+                              productDetails.some(
+                                (np) => np.id.toString() === p.id.toString()
+                              )
+                            ) {
                               setProductDetails(
-                                productDetails.map(np =>
-                                  np.id.toString() === p.id.toString() ? { ...p, fieldName: e } : np
+                                productDetails.map((np) =>
+                                  np.id.toString() === p.id.toString()
+                                    ? { ...p, fieldName: e }
+                                    : np
                                 )
                               );
                             }
@@ -777,15 +985,21 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                         />
                         <TextInput
                           dense
-                          label='Enter field values'
+                          label="Enter field values"
                           multiline
                           // numberOfLines={5}
                           value={p.fieldValue}
-                          onChangeText={e => {
-                            if (productDetails.some(np => np.id.toString() === p.id.toString())) {
+                          onChangeText={(e) => {
+                            if (
+                              productDetails.some(
+                                (np) => np.id.toString() === p.id.toString()
+                              )
+                            ) {
                               setProductDetails(
-                                productDetails.map(np =>
-                                  np.id.toString() === p.id.toString() ? { ...p, fieldValue: e } : np
+                                productDetails.map((np) =>
+                                  np.id.toString() === p.id.toString()
+                                    ? { ...p, fieldValue: e }
+                                    : np
                                 )
                               );
                             }
@@ -799,20 +1013,20 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                 <View style={{ flexDirection: "column" }}>
                   <TextInput
                     dense
-                    label='Enter field name'
+                    label="Enter field name"
                     value={formik.values.fieldName}
-                    onChangeText={e => {
+                    onChangeText={(e) => {
                       formik.setFieldValue("fieldName", e);
                     }}
                     onBlur={formik.handleBlur("fieldName")}
                   />
                   <TextInput
                     dense
-                    label='Enter field values'
+                    label="Enter field values"
                     multiline
                     numberOfLines={5}
                     value={formik.values.fieldValue}
-                    onChangeText={e => {
+                    onChangeText={(e) => {
                       formik.setFieldValue("fieldValue", e);
                     }}
                     onBlur={formik.handleBlur("fieldValue")}
@@ -831,7 +1045,8 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
 
                       formik.setFieldValue("fieldValue", "");
                       formik.setFieldValue("fieldName", "");
-                    }}>
+                    }}
+                  >
                     Add details
                   </Button>
                 </View>
@@ -839,16 +1054,20 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
             )}
 
             <Button
-              mode='contained'
+              mode="contained"
               onPress={formik.handleSubmit}
               contentStyle={{ width: "100%" }}
               labelStyle={{
                 color: lightText,
                 fontWeight: "bold",
               }}
-              icon='plus'
-              disabled={loading || addProductMutation.isLoading || updateMsgLoading}
-              loading={loading || addProductMutation.isLoading || updateMsgLoading}
+              icon="plus"
+              disabled={
+                loading || addProductMutation.isLoading || updateMsgLoading
+              }
+              loading={
+                loading || addProductMutation.isLoading || updateMsgLoading
+              }
               style={{
                 fles: 1,
                 height: "45px",
@@ -857,7 +1076,8 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
                 // borderRadius: 0,
                 // borderColor: primaryColor,
                 // borderWidth: 2,
-              }}>
+              }}
+            >
               {product ? "Update" : "Add"}
             </Button>
           </View>
@@ -874,7 +1094,8 @@ function AddProduct({ storeId, productId, data: { getMyProductDetails: product }
           // left: 0,
           // right: 0,
         }}
-        style={{ backgroundColor: "#aaa", boxShadow: "none" }}>
+        style={{ backgroundColor: "#aaa", boxShadow: "none" }}
+      >
         <Text style={{ color: accentColor, fontWeight: "600" }}>
           We have successfully added your product, please check your store.
         </Text>
@@ -895,72 +1116,72 @@ const styles = StyleSheet.create({
   b: { color: primaryColor, fontWeight: "600" },
 });
 
-export async function getServerSideProps(ctx) {
-  const { storeId } = ctx.params;
-  const { productId } = ctx.query;
-
-  const { token } = parseCookies(ctx);
-
-  if (!token) {
-    return {
-      notFound: true,
-    };
-  }
-  const decode = jwt_decode(token);
-
-  if (decode.role === "user") {
-    return {
-      notFound: true,
-    };
-  }
-
-  const { getMyStore: storeCategories } = await ssrClient(token).request(
-    gql`
-      query Query($getMyStoreFilter: FilterFindOneStoreInput!) {
-        getMyStore(filter: $getMyStoreFilter) {
-          categories {
-            name
-            _id
-          }
-        }
-      }
-    `,
-    {
-      getMyStoreFilter: {
-        _id: storeId,
-        // owner: decode.id,
-      },
-    }
-  );
-
-  if (productId && token) {
-    const data = await ssrClient(token).request(GET_MY_PRODUCT_DETAILS, {
-      user: decode.id,
-      productId,
-    });
-
-    return {
-      props: {
-        token,
-        storeId,
-        productId,
-        data: data,
-        storeCategories,
-      },
-    };
-  }
-  return {
-    props: {
-      token,
-      storeId,
-      productId: null,
-      data: { getMyProductDetails: null },
-      storeCategories,
-    },
-  };
-}
-
 export default AddProduct;
+
+// export async function getServerSideProps(ctx) {
+//   const { storeId } = ctx.params;
+//   const { productId } = ctx.query;
+//   const { token } = parseCookies(ctx);
+//   console.log("---ctx---", token);
+
+//   if (!token) {
+//     return {
+//       notFound: true,
+//     };
+//   }
+//   const decode = jwt_decode(token);
+
+//   if (decode.role === "user") {
+//     return {
+//       notFound: true,
+//     };
+//   }
+
+//   const { getMyStore: storeCategories } = await ssrClient(token).request(
+//     gql`
+//       query Query($filter: FilterFindOneStoreInput!) {
+//         getMyStore(filter: $filter) {
+//           categories {
+//             name
+//             _id
+//           }
+//         }
+//       }
+//     `,
+//     {
+//       filter: {
+//         _id: storeId,
+//         // owner: decode.id,
+//       },
+//     }
+//   );
+
+//   if (productId && token) {
+//     const data = await ssrClient(token).request(GET_MY_PRODUCT_DETAILS, {
+//       user: decode.id,
+//       productId,
+//     });
+
+//     return {
+//       props: {
+//         token,
+//         storeId,
+//         productId,
+//         data: data,
+//         storeCategories,
+//       },
+//     };
+//   }
+//   return {
+//     props: {
+//       token,
+//       storeId,
+//       productId: null,
+//       data: { getMyProductDetails: null },
+//       storeCategories,
+//     },
+//   };
+// }
 
 // useEffect(() => {
 //   (async () => {

@@ -1,4 +1,5 @@
 import jwt_decode from "jwt-decode";
+import { useRouter } from "next/router";
 import { parseCookies } from "nookies";
 import React from "react";
 import { FlatList, ScrollView, Text, View } from "react-native";
@@ -27,35 +28,50 @@ const getMyProducts = async (pageParam, storeId) => {
   };
 };
 
-function MyProducts({ storeId, myStoreProducts }) {
-  console.log(myStoreProducts);
-
+function MyProducts() {
+  const {
+    query: { storeId },
+  } = useRouter();
   const {
     state: { user, isAuthenticated },
   } = UserState();
 
-  const { isLoading, isSuccess, isError, data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useInfiniteQuery("myProducts", ({ pageParam = 1 }) => getMyProducts(pageParam, storeId), {
+  const {
+    isLoading,
+    isSuccess,
+    isError,
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+  } = useInfiniteQuery(
+    "myProducts",
+    ({ pageParam = 1 }) => getMyProducts(pageParam, storeId),
+    {
       getNextPageParam: (lastPage, pages) => {
         return lastPage.hasNextPage ? lastPage.page + 1 : undefined;
       },
       getPreviousPageParam: (firstPage, allPages) => {
         return firstPage.hasPreviousPage;
       },
-      initialData: myStoreProducts,
+      // initialData: myStoreProducts,
       enabled: isAuthenticated,
       retry: false,
       refetchOnWindowFocus: false,
       retryOnMount: false,
       refetchOnReconnect: false,
-    });
+    }
+  );
 
   return (
-    <Layout title='My Products'>
+    <Layout title="My Products">
       {isLoading ? (
         <CustomLoader />
       ) : isError ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
           <Text>An Error Occurred</Text>
         </View>
       ) : isSuccess && data.pages?.length > 0 ? (
@@ -68,7 +84,9 @@ function MyProducts({ storeId, myStoreProducts }) {
                   data={p.products}
                   centerContent
                   keyExtractor={(item, idx) => idx.toString()}
-                  renderItem={({ item }) => <MyProdList item={item} storeId={storeId} />}
+                  renderItem={({ item }) => (
+                    <MyProdList item={item} storeId={storeId} />
+                  )}
                 />
               ) : (
                 <View
@@ -76,7 +94,8 @@ function MyProducts({ storeId, myStoreProducts }) {
                     justifyContent: "center",
                     alignItems: "center",
                     flex: 1,
-                  }}>
+                  }}
+                >
                   <Text>No Products found</Text>
                 </View>
               )}
@@ -96,7 +115,8 @@ function MyProducts({ storeId, myStoreProducts }) {
             justifyContent: "center",
             alignItems: "center",
             flex: 1,
-          }}>
+          }}
+        >
           No Products found
         </View>
       )}
@@ -104,58 +124,58 @@ function MyProducts({ storeId, myStoreProducts }) {
   );
 }
 
-export async function getServerSideProps(ctx) {
-  const { token } = parseCookies(ctx);
-
-  const { storeId } = ctx.params;
-
-  if (!token) {
-    return {
-      notFound: true,
-    };
-  }
-  const decode = jwt_decode(token);
-
-  if (decode.role === "user") {
-    return {
-      notFound: true,
-    };
-  }
-
-  try {
-    const { getProductsByOptions } = await ssrClient(token).request(MY_PRODUCTS, {
-      filter: { storeId },
-      page: 1,
-      perPage: 10,
-    });
-
-    return {
-      props: {
-        myStoreProducts: {
-          pages: [
-            {
-              products: getProductsByOptions.items,
-              page: getProductsByOptions.pageInfo.currentPage,
-              hasNextPage: getProductsByOptions.pageInfo.hasNextPage,
-              hasPreviousPage: getProductsByOptions.pageInfo.hasPreviousPage,
-              count: getProductsByOptions.count,
-            },
-          ],
-          pageParams: [null],
-        },
-        storeId,
-        token,
-      },
-    };
-  } catch (error) {
-    console.error(error);
-    return {
-      notFound: true,
-    };
-  }
-}
-
 export default MyProducts;
+
+// export async function getServerSideProps(ctx) {
+//   const { token } = parseCookies(ctx);
+
+//   const { storeId } = ctx.params;
+
+//   if (!token) {
+//     return {
+//       notFound: true,
+//     };
+//   }
+//   const decode = jwt_decode(token);
+
+//   if (decode.role === "user") {
+//     return {
+//       notFound: true,
+//     };
+//   }
+
+//   try {
+//     const { getProductsByOptions } = await ssrClient(token).request(MY_PRODUCTS, {
+//       filter: { storeId },
+//       page: 1,
+//       perPage: 10,
+//     });
+
+//     return {
+//       props: {
+//         myStoreProducts: {
+//           pages: [
+//             {
+//               products: getProductsByOptions.items,
+//               page: getProductsByOptions.pageInfo.currentPage,
+//               hasNextPage: getProductsByOptions.pageInfo.hasNextPage,
+//               hasPreviousPage: getProductsByOptions.pageInfo.hasPreviousPage,
+//               count: getProductsByOptions.count,
+//             },
+//           ],
+//           pageParams: [null],
+//         },
+//         storeId,
+//         token,
+//       },
+//     };
+//   } catch (error) {
+//     console.error(error);
+//     return {
+//       notFound: true,
+//     };
+//   }
+// }
 
 //  const { data } = await axios.get(
 //    `${process.env.NEXT_PUBLIC_BASE_URL}/api/products/me/${storeId}?pageNumber=${0}`,
