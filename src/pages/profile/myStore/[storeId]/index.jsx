@@ -96,6 +96,19 @@ function MyStore({ myStore }) {
       >
         <Text>View Store orders</Text>
       </Button>
+      <Button
+        style={{ padding: 10 }}
+        contentStyle={{
+          backgroundColor: "rgb(240, 191, 76)",
+        }}
+        labelStyle={{ fontWeight: "600", fontSize: 12 }}
+        color="rgb(39, 39, 39)"
+        onPress={() =>
+          router.push(`/profile/myStore/${data?.getMyStore?._id}/update`)
+        }
+      >
+        <Text>Update Store</Text>
+      </Button>
       {role === "admin" && (
         <>
           <Button
