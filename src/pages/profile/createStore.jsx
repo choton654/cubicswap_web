@@ -244,48 +244,48 @@ const styles = StyleSheet.create({
 
 export default CreateStore;
 
-export async function getServerSideProps(ctx) {
-  const { token } = parseCookies(ctx);
-  if (!token) {
-    return {
-      notFound: true,
-    };
-  }
+// export async function getServerSideProps(ctx) {
+//   const { token } = parseCookies(ctx);
+//   if (!token) {
+//     return {
+//       notFound: true,
+//     };
+//   }
 
-  const decode = jwtDecode(token);
+//   const decode = jwtDecode(token);
 
-  if (!token || decode?.role === "user") {
-    return {
-      notFound: true,
-    };
-  }
+//   if (!token || decode?.role === "user") {
+//     return {
+//       notFound: true,
+//     };
+//   }
 
-  try {
-    const { data } = await axios.get(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/products/store/isExists`
-    );
+//   try {
+//     const { data } = await axios.get(
+//       `${process.env.NEXT_PUBLIC_BASE_URL}/api/products/store/isExists`
+//     );
 
-    if (data.existingStore) {
-      return {
-        redirect: {
-          destination: `/profile/myStore/${data.existingStore._id.toString()}/update`,
-          permanent: false,
-        },
-      };
-    }
-  } catch (error) {
-    console.error(error);
-    return {
-      notFound: true,
-    };
-  }
+//     if (data.existingStore) {
+//       return {
+//         redirect: {
+//           destination: `/profile/myStore/${data.existingStore._id.toString()}/update`,
+//           permanent: false,
+//         },
+//       };
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     return {
+//       notFound: true,
+//     };
+//   }
 
-  return {
-    props: {
-      decode,
-    },
-  };
-}
+//   return {
+//     props: {
+//       decode,
+//     },
+//   };
+// }
 
 // validate={(values) => {
 //   const errors = {};

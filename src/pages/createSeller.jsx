@@ -19,7 +19,7 @@ function CreateSeller() {
   });
 
   return (
-    <Layout title='Create User'>
+    <Layout title="Create User">
       <>
         <View>
           <View
@@ -28,20 +28,28 @@ function CreateSeller() {
               alignItems: "center",
               padding: 10,
               backgroundColor: "rgb(39,39,39)",
-            }}>
+            }}
+          >
             <Text
               style={{
                 textAlign: "center",
                 color: "rgb(240, 191, 76)",
                 fontWeight: "500",
                 fontSize: "1.5rem",
-              }}>
+              }}
+            >
               Create seller
             </Text>
           </View>
 
           <Formik
-            initialValues={{ name: "", email: "", password: "", phone: "", sellerType: "Seller" }}
+            initialValues={{
+              name: "",
+              email: "",
+              password: "",
+              phone: "",
+              sellerType: "Seller",
+            }}
             onSubmit={(values, { resetForm }) => {
               const { name, email, password, phone } = values;
               if (!name || !email || !password || !phone) {
@@ -49,45 +57,53 @@ function CreateSeller() {
               }
               mutation.mutate(values);
               resetForm();
-            }}>
-            {({ handleChange, handleBlur, handleSubmit, setFieldValue, values }) => (
+            }}
+          >
+            {({
+              handleChange,
+              handleBlur,
+              handleSubmit,
+              setFieldValue,
+              values,
+            }) => (
               <View>
                 <TextInput
-                  label='name'
+                  label="name"
                   onChangeText={handleChange("name")}
                   onBlur={handleBlur("name")}
                   value={values.name}
                 />
                 <TextInput
-                  label='email'
+                  label="email"
                   onChangeText={handleChange("email")}
                   onBlur={handleBlur("email")}
                   value={values.email}
                 />
                 <TextInput
-                  label='phone'
+                  label="phone"
                   onChangeText={handleChange("phone")}
                   onBlur={handleBlur("phone")}
                   value={values.phone}
                 />
                 <TextInput
-                  label='Password'
+                  label="Password"
                   onChangeText={handleChange("password")}
                   onBlur={handleBlur("password")}
                   value={values.password}
                 />
 
                 <Radio.Group
-                  name='myRadioGroup'
-                  accessibilityLabel='favorite number'
+                  name="myRadioGroup"
+                  accessibilityLabel="favorite number"
                   value={values.sellerType}
-                  onChange={nextValue => {
+                  onChange={(nextValue) => {
                     setFieldValue("sellerType", nextValue);
-                  }}>
-                  <Radio colorScheme='rgb(240, 191, 76)' value='Seller' my={1}>
+                  }}
+                >
+                  <Radio colorScheme="rgb(240, 191, 76)" value="Seller" my={1}>
                     Seller
                   </Radio>
-                  <Radio colorScheme='rgb(240, 191, 76)' value='Company' my={1}>
+                  <Radio colorScheme="rgb(240, 191, 76)" value="Company" my={1}>
                     Company
                   </Radio>
                 </Radio.Group>
@@ -106,7 +122,8 @@ function CreateSeller() {
                     backgroundColor: "rgb(39, 39, 39)",
                     justifyContent: "center",
                     borderRadius: 0,
-                  }}>
+                  }}
+                >
                   Submit
                 </Button>
               </View>
@@ -117,25 +134,24 @@ function CreateSeller() {
     </Layout>
   );
 }
-
-export async function getServerSideProps(ctx) {
-  const { token } = parseCookies(ctx);
-
-  if (!token) {
-    return {
-      notFound: true,
-    };
-  }
-  const decode = jwt_decode(token);
-
-  if (decode.role !== "admin") {
-    return {
-      notFound: true,
-    };
-  }
-  return {
-    props: { token, decode },
-  };
-}
-
 export default CreateSeller;
+
+// export async function getServerSideProps(ctx) {
+//   const { token } = parseCookies(ctx);
+
+//   if (!token) {
+//     return {
+//       notFound: true,
+//     };
+//   }
+//   const decode = jwt_decode(token);
+
+//   if (decode.role !== "admin") {
+//     return {
+//       notFound: true,
+//     };
+//   }
+//   return {
+//     props: { token, decode },
+//   };
+// }

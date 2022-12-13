@@ -65,25 +65,24 @@ function AllUsers() {
     </Layout>
   );
 }
-
-export async function getServerSideProps(ctx) {
-  const { token } = parseCookies(ctx);
-
-  if (!token) {
-    return {
-      notFound: true,
-    };
-  }
-  const decode = jwt_decode(token);
-
-  if (decode.role !== "admin") {
-    return {
-      notFound: true,
-    };
-  }
-  return {
-    props: { token, decode },
-  };
-}
-
 export default AllUsers;
+
+// export async function getServerSideProps(ctx) {
+//   const { token } = parseCookies(ctx);
+
+//   if (!token) {
+//     return {
+//       notFound: true,
+//     };
+//   }
+//   const decode = jwt_decode(token);
+
+//   if (decode.role !== "admin") {
+//     return {
+//       notFound: true,
+//     };
+//   }
+//   return {
+//     props: { token, decode },
+//   };
+// }

@@ -1,31 +1,77 @@
 import { Formik } from "formik";
-import jwtDecode from "jwt-decode";
-import { Actionsheet, Badge, Box, CheckIcon, Flex, Select } from "native-base";
-import { parseCookies } from "nookies";
+import { Actionsheet } from "native-base";
+import { useRouter } from "next/router";
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Icon, ListItem, Overlay } from "react-native-elements";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Icon, ListItem } from "react-native-elements";
 import { Button, Chip, TextInput } from "react-native-paper";
-import { useMutation } from "react-query";
+import { useMutation, useQuery } from "react-query";
 import { v4 as uuidv4 } from "uuid";
-import { client, ssrClient } from "../../../../client";
+import { client } from "../../../../client";
 import Layout from "../../../../components/Layout";
-import { accentColor, deleteColor, primaryColor, textColor } from "../../../../Constant/color";
+import CustomLoader from "../../../../components/Layout/CustomLoader";
+import {
+  accentColor,
+  deleteColor,
+  primaryColor,
+  textColor,
+} from "../../../../Constant/color";
 import { ScreenState } from "../../../../context/state/screenState";
 import { UPDATE_STORE_DETAILS } from "../../../../graphql/mutation";
 import { GET_MY_STORE_DETAILS } from "../../../../graphql/query";
 
-const updateStore = async variables => {
+const updateStore = async (variables) => {
   const { updeteStore } = await client.request(UPDATE_STORE_DETAILS, variables);
   return updeteStore;
 };
 
-export default function UpdateStore({ storeId, data: { getMyStoreDetails, getCategories } }) {
+export default function UpdateStore() {
   // const {
   //   state: {
   //     user: { _id },
   //   },
   // } = UserState();
+
+  const {
+    query: { storeId },
+  } = useRouter();
+
+  const {
+    data,
+    isLoading: sLoading,
+    isSuccess,
+  } = useQuery(
+    "storeDetails",
+    async () => {
+      const data = await client.request(GET_MY_STORE_DETAILS, {
+        storeId,
+        getCategoriesFilter: { hasProduct: true },
+      });
+      console.log("---storedata---", data);
+
+      return data;
+    },
+    {
+      enabled: !!storeId,
+      retry: false,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+      onSuccess: (d) => {
+        console.log(d);
+        // setGetCategories(d.data.getCategories);
+        // setGetMyStoreDetails(d.data.getMyStoreDetails);
+      },
+      onerror: (e) => {
+        console.error(e);
+      },
+    }
+  );
 
   const [visible, setVisible] = useState(false);
 
@@ -35,10 +81,12 @@ export default function UpdateStore({ storeId, data: { getMyStoreDetails, getCat
 
   const { screenWidth } = ScreenState();
 
+  const [getCategories, setGetCategories] = useState(null);
+  // const [getMyStoreDetails, setGetMyStoreDetails] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [productDetails, setProductDetails] = useState(
-    getMyStoreDetails?.details
-      ? getMyStoreDetails?.details.map(p => ({
+    data && data.getMyStoreDetails?.details
+      ? data.getMyStoreDetails?.details.map((p) => ({
           id: uuidv4(),
           fieldName: p.fieldName,
           fieldValue: p.fieldValue,
@@ -49,173 +97,215 @@ export default function UpdateStore({ storeId, data: { getMyStoreDetails, getCat
   const onToggleDetails = () => setShowDetails(!showDetails);
 
   const { mutate, isLoading, isError } = useMutation(updateStore, {
-    onSuccess: d => console.log(d),
-    onError: e => console.error(e),
+    onSuccess: (d) => console.log(d),
+    onError: (e) => console.error(e),
   });
 
+  if (sLoading) {
+    return <CustomLoader />;
+  }
+
   return (
-    <Layout title='Update store'>
-      <ScrollView contentContainerStyle={styles.b}>
-        <View style={styles.c}>
-          <Text style={styles.d}>{getMyStoreDetails?.storeName}</Text>
-        </View>
-        <Formik
-          initialValues={{
-            storeName: getMyStoreDetails ? getMyStoreDetails.storeName : "",
-            aboutStore: getMyStoreDetails ? getMyStoreDetails.aboutStore : "",
-            phone: getMyStoreDetails ? getMyStoreDetails.phone : "",
-            pincode: getMyStoreDetails ? getMyStoreDetails.address.pincode : "",
-            selectedCategories: getMyStoreDetails.categories.length > 0 ? [...getMyStoreDetails.categories] : [],
-            // selectedCategories: [],
-            city: getMyStoreDetails ? getMyStoreDetails.address.city : "",
-            state: getMyStoreDetails ? getMyStoreDetails.address.state : "",
-            district: getMyStoreDetails ? getMyStoreDetails.address.district : "",
-            roadName: getMyStoreDetails ? getMyStoreDetails.address.roadName : "",
-            landmark: getMyStoreDetails ? getMyStoreDetails.address.landmark : "",
-            fieldName: "",
-            fieldValue: "",
-          }}
-          onSubmit={values => {
-            console.log(values);
-            if (
-              values.phone.trim() === "" ||
-              values.pincode.trim() === "" ||
-              values.city.trim() === "" ||
-              values.state.trim() === "" ||
-              values.district.trim() === "" ||
-              values.roadName.trim() === "" ||
-              values.landmark.trim() === "" ||
-              values.storeName.trim() === "" ||
-              values.aboutStore.trim() === "" ||
-              values.selectedCategories.length <= 0
-            ) {
-              alert("* fields are required");
-              return;
-            }
-            mutate({
-              updeteStoreFilter: {
-                // owner: _id.toString(),
-                _id: storeId,
-              },
-              updeteStoreRecord: {
-                storeName: values.storeName,
-                aboutStore: values.aboutStore,
-                phone: values.phone,
-                categories: values.selectedCategories.map(c => c._id.toString()),
-                address: {
-                  city: values.city,
-                  pincode: values.pincode,
-                  landmark: values.landmark,
-                  roadName: values.roadName,
-                  state: values.state,
-                  district: values.district,
+    <Layout title="Update store">
+      {data && (
+        <ScrollView contentContainerStyle={styles.b}>
+          <View style={styles.c}>
+            <Text style={styles.d}>{data.getMyStoreDetails?.storeName}</Text>
+          </View>
+          <Formik
+            initialValues={{
+              storeName: data.getMyStoreDetails
+                ? data.getMyStoreDetails.storeName
+                : "",
+              aboutStore: data.getMyStoreDetails
+                ? data.getMyStoreDetails.aboutStore
+                : "",
+              phone: data.getMyStoreDetails ? data.getMyStoreDetails.phone : "",
+              pincode: data.getMyStoreDetails
+                ? data.getMyStoreDetails.address.pincode
+                : "",
+              selectedCategories:
+                data.getMyStoreDetails.categories.length > 0
+                  ? [...data.getMyStoreDetails.categories]
+                  : [],
+              // selectedCategories: [],
+              city: data.getMyStoreDetails
+                ? data.getMyStoreDetails.address.city
+                : "",
+              state: data.getMyStoreDetails
+                ? data.getMyStoreDetails.address.state
+                : "",
+              district: data.getMyStoreDetails
+                ? data.getMyStoreDetails.address.district
+                : "",
+              roadName: data.getMyStoreDetails
+                ? data.getMyStoreDetails.address.roadName
+                : "",
+              landmark: data.getMyStoreDetails
+                ? data.getMyStoreDetails.address.landmark
+                : "",
+              fieldName: "",
+              fieldValue: "",
+            }}
+            onSubmit={(values) => {
+              console.log(values);
+              if (
+                values.phone.trim() === "" ||
+                values.pincode.trim() === "" ||
+                values.city.trim() === "" ||
+                values.state.trim() === "" ||
+                values.district.trim() === "" ||
+                values.roadName.trim() === "" ||
+                values.landmark.trim() === "" ||
+                values.storeName.trim() === "" ||
+                values.aboutStore.trim() === "" ||
+                values.selectedCategories.length <= 0
+              ) {
+                alert("* fields are required");
+                return;
+              }
+              mutate({
+                updeteStoreFilter: {
+                  // owner: _id.toString(),
+                  _id: storeId,
                 },
-                details:
-                  productDetails.length > 0
-                    ? productDetails.map(r => ({
-                        fieldName: r.fieldName,
-                        fieldValue: r.fieldValue,
-                      }))
-                    : [],
-              },
-            });
-          }}>
-          {({ handleChange, handleBlur, handleSubmit, setFieldValue, values, initialValues, errors, touched }) => (
-            <View style={{}}>
-              <TextInput
-                label='Store Name *'
-                onChangeText={handleChange("storeName")}
-                onBlur={handleBlur("storeName")}
-                value={values.storeName}
-              />
-              <TextInput
-                label='About your store *'
-                multiline
-                numberOfLines={5}
-                onChangeText={handleChange("aboutStore")}
-                onBlur={handleBlur("aboutStore")}
-                value={values.aboutStore}
-              />
+                updeteStoreRecord: {
+                  storeName: values.storeName,
+                  aboutStore: values.aboutStore,
+                  phone: values.phone,
+                  categories: values.selectedCategories.map((c) =>
+                    c._id.toString()
+                  ),
+                  address: {
+                    city: values.city,
+                    pincode: values.pincode,
+                    landmark: values.landmark,
+                    roadName: values.roadName,
+                    state: values.state,
+                    district: values.district,
+                  },
+                  details:
+                    productDetails.length > 0
+                      ? productDetails.map((r) => ({
+                          fieldName: r.fieldName,
+                          fieldValue: r.fieldValue,
+                        }))
+                      : [],
+                },
+              });
+            }}
+          >
+            {({
+              handleChange,
+              handleBlur,
+              handleSubmit,
+              setFieldValue,
+              values,
+              initialValues,
+              errors,
+              touched,
+            }) => (
+              <View style={{}}>
+                <TextInput
+                  label="Store Name *"
+                  onChangeText={handleChange("storeName")}
+                  onBlur={handleBlur("storeName")}
+                  value={values.storeName}
+                />
+                <TextInput
+                  label="About your store *"
+                  multiline
+                  numberOfLines={5}
+                  onChangeText={handleChange("aboutStore")}
+                  onBlur={handleBlur("aboutStore")}
+                  value={values.aboutStore}
+                />
 
-              <TextInput
-                label='Phone'
-                onChangeText={handleChange("phone")}
-                onBlur={handleBlur("phone")}
-                value={values.phone}
-              />
-              <TextInput
-                label='Pin-code *'
-                onChangeText={handleChange("pincode")}
-                onBlur={handleBlur("pincode")}
-                value={values.pincode}
-              />
+                <TextInput
+                  label="Phone"
+                  onChangeText={handleChange("phone")}
+                  onBlur={handleBlur("phone")}
+                  value={values.phone}
+                />
+                <TextInput
+                  label="Pin-code *"
+                  onChangeText={handleChange("pincode")}
+                  onBlur={handleBlur("pincode")}
+                  value={values.pincode}
+                />
 
-              <TextInput
-                label='City *'
-                onChangeText={handleChange("city")}
-                onBlur={handleBlur("city")}
-                value={values.city}
-              />
-              <TextInput
-                label='State *'
-                onChangeText={handleChange("state")}
-                onBlur={handleBlur("state")}
-                value={values.state}
-              />
-              <TextInput
-                label='district *'
-                onChangeText={handleChange("district")}
-                onBlur={handleBlur("district")}
-                value={values.district}
-              />
-              <TextInput
-                label='RoadName *'
-                onChangeText={handleChange("roadName")}
-                onBlur={handleBlur("roadName")}
-                value={values.roadName}
-              />
-              <TextInput
-                label='Landmark *'
-                onChangeText={handleChange("landmark")}
-                onBlur={handleBlur("landmark")}
-                value={values.landmark}
-              />
+                <TextInput
+                  label="City *"
+                  onChangeText={handleChange("city")}
+                  onBlur={handleBlur("city")}
+                  value={values.city}
+                />
+                <TextInput
+                  label="State *"
+                  onChangeText={handleChange("state")}
+                  onBlur={handleBlur("state")}
+                  value={values.state}
+                />
+                <TextInput
+                  label="district *"
+                  onChangeText={handleChange("district")}
+                  onBlur={handleBlur("district")}
+                  value={values.district}
+                />
+                <TextInput
+                  label="RoadName *"
+                  onChangeText={handleChange("roadName")}
+                  onBlur={handleBlur("roadName")}
+                  value={values.roadName}
+                />
+                <TextInput
+                  label="Landmark *"
+                  onChangeText={handleChange("landmark")}
+                  onBlur={handleBlur("landmark")}
+                  value={values.landmark}
+                />
 
-              <View>
-                <View
-                  style={{
-                    flex: 1,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    paddingVertical: 10,
-                  }}>
-                  <Text style={{ color: textColor, textAlign: "center" }}>All Store Categories</Text>
-                </View>
-                <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-                  {values.selectedCategories.map((cat, i) => (
-                    <Chip
-                      textStyle={{ color: accentColor }}
-                      key={i}
-                      icon={() => (
-                        <Icon
-                          size={15}
-                          name='delete'
-                          color={deleteColor}
-                          type='material'
-                          onPress={() => {
-                            setFieldValue(
-                              "selectedCategories",
-                              values.selectedCategories.filter(c => c._id.toString() !== cat._id.toString())
-                            );
-                          }}
-                        />
-                      )}>
-                      {cat.name}
-                    </Chip>
-                  ))}
-                </View>
+                <View>
+                  <View
+                    style={{
+                      flex: 1,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      paddingVertical: 10,
+                    }}
+                  >
+                    <Text style={{ color: textColor, textAlign: "center" }}>
+                      All Store Categories
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                    {values.selectedCategories.map((cat, i) => (
+                      <Chip
+                        textStyle={{ color: accentColor }}
+                        key={i}
+                        icon={() => (
+                          <Icon
+                            size={15}
+                            name="delete"
+                            color={deleteColor}
+                            type="material"
+                            onPress={() => {
+                              setFieldValue(
+                                "selectedCategories",
+                                values.selectedCategories.filter(
+                                  (c) => c._id.toString() !== cat._id.toString()
+                                )
+                              );
+                            }}
+                          />
+                        )}
+                      >
+                        {cat.name}
+                      </Chip>
+                    ))}
+                  </View>
 
-                {/* <Box w='3/4' maxW='300'>
+                  {/* <Box w='3/4' maxW='300'>
                   <Select
                     selectedValue={""}
                     minWidth='200'
@@ -234,8 +324,8 @@ export default function UpdateStore({ storeId, data: { getMyStoreDetails, getCat
                       }
                       closeMenu();
                     }}>
-                    {getCategories.length > 0 &&
-                      getCategories.map((cat, i) => (
+                    {data.getCategories.length > 0 &&
+                      data.getCategories.map((cat, i) => (
                         <Select.Item
                           key={i}
                           label={cat}
@@ -253,215 +343,269 @@ export default function UpdateStore({ storeId, data: { getMyStoreDetails, getCat
                   </Select>
                 </Box> */}
 
-                <Button
-                  onPress={openMenu}
-                  contentStyle={{
-                    backgroundColor: accentColor,
-                    borderColor: "#aaa",
-                    borderWidth: 2,
-                  }}>
-                  Select categories
-                </Button>
+                  <Button
+                    onPress={openMenu}
+                    contentStyle={{
+                      backgroundColor: accentColor,
+                      borderColor: "#aaa",
+                      borderWidth: 2,
+                    }}
+                  >
+                    Select categories
+                  </Button>
 
-                <Actionsheet
-                  isOpen={visible}
-                  onClose={() => setVisible(false)}
-                  maxW={screenWidth}
-                  w={screenWidth}
-                  mx={"auto"}
-                  hideDragIndicator>
-                  <Actionsheet.Content w={"full"} borderTopRadius='0'>
-                    <TouchableOpacity style={{ padding: 10 }} onPress={closeMenu}>
-                      <Icon size={30} type='material' name='cancel' />
-                    </TouchableOpacity>
+                  <Actionsheet
+                    isOpen={visible}
+                    onClose={() => setVisible(false)}
+                    maxW={screenWidth}
+                    w={screenWidth}
+                    mx={"auto"}
+                    hideDragIndicator
+                  >
+                    <Actionsheet.Content w={"full"} borderTopRadius="0">
+                      <TouchableOpacity
+                        style={{ padding: 10 }}
+                        onPress={closeMenu}
+                      >
+                        <Icon size={30} type="material" name="cancel" />
+                      </TouchableOpacity>
+                      <View
+                        style={{
+                          justifyContent: "center",
+                          alignItems: "center",
+                          paddingVertical: 10,
+                        }}
+                      >
+                        <Text style={{ fontSize: 15, fontWeight: "500" }}>
+                          Add Collections to Store
+                        </Text>
+                      </View>
+                      <ScrollView
+                        style={{ width: "100%" }}
+                        contentContainerStyle={{ width: "100%" }}
+                      >
+                        {data.getCategories.length > 0 &&
+                          data.getCategories.map((cat, i) => (
+                            <ListItem
+                              key={i}
+                              bottomDivider
+                              onPress={() => {
+                                if (
+                                  values.selectedCategories.some(
+                                    (c) =>
+                                      c._id.toString() === cat._id.toString()
+                                  )
+                                ) {
+                                  setFieldValue("selectedCategories", [
+                                    ...values.selectedCategories,
+                                  ]);
+                                } else {
+                                  setFieldValue("selectedCategories", [
+                                    ...values.selectedCategories,
+                                    cat,
+                                  ]);
+                                }
+                                closeMenu();
+                              }}
+                            >
+                              <ListItem.Content>
+                                <ListItem.Title
+                                  style={{
+                                    color: accentColor,
+                                    fontWeight: "500",
+                                  }}
+                                >
+                                  {cat.name}
+                                </ListItem.Title>
+                                {/* <Flex justifyContent={"space-between"}>
+                              </Flex> */}
+                                {/* <Badge bg={accentColor} color={primaryColor}>
+                                  ADD
+                                </Badge> */}
+                              </ListItem.Content>
+                            </ListItem>
+                          ))}
+                      </ScrollView>
+                    </Actionsheet.Content>
+                  </Actionsheet>
+
+                  <Button
+                    onPress={onToggleDetails}
+                    contentStyle={{
+                      backgroundColor: accentColor,
+                      borderColor: "#aaa",
+                      borderWidth: 2,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: primaryColor,
+                        fontWeight: "500",
+                      }}
+                    >
+                      Add Store Details
+                    </Text>
+                  </Button>
+
+                  {showDetails && (
                     <View
                       style={{
                         justifyContent: "center",
-                        alignItems: "center",
-                        paddingVertical: 10,
-                      }}>
-                      <Text style={{ fontSize: 15, fontWeight: "500" }}>Add Collections to Store</Text>
+                        borderRadius: 5,
+                        borderColor: accentColor,
+                        borderWidth: 2,
+                        padding: 10,
+                        gridGap: 10,
+                        backgroundColor: textColor,
+                      }}
+                    >
+                      {productDetails.length > 0 && (
+                        <View
+                          style={{
+                            // flexDirection: "row",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              textAlign: "center",
+                              fontWeight: "500",
+                              fontSize: 15,
+                              marginVertical: 10,
+                            }}
+                          >
+                            All Details
+                          </Text>
+                          {productDetails.map((p, i) => (
+                            <View
+                              key={i}
+                              style={{ gridGap: 5, justifyContent: "center" }}
+                            >
+                              <Icon
+                                type="material"
+                                name="delete"
+                                size={15}
+                                color={deleteColor}
+                                onPress={() => {
+                                  setProductDetails(
+                                    productDetails.filter(
+                                      (np) =>
+                                        np.id.toString() !== p.id.toString()
+                                    )
+                                  );
+                                }}
+                              />
+                              <TextInput
+                                dense
+                                label="Enter field name"
+                                value={p.fieldName}
+                                onChangeText={(e) => {
+                                  if (
+                                    productDetails.some(
+                                      (np) =>
+                                        np.id.toString() === p.id.toString()
+                                    )
+                                  ) {
+                                    setProductDetails(
+                                      productDetails.map((np) =>
+                                        np.id.toString() === p.id.toString()
+                                          ? { ...p, fieldName: e }
+                                          : np
+                                      )
+                                    );
+                                  }
+                                }}
+                              />
+                              <TextInput
+                                dense
+                                label="Enter field values"
+                                multiline
+                                // numberOfLines={5}
+                                value={p.fieldValue}
+                                onChangeText={(e) => {
+                                  if (
+                                    productDetails.some(
+                                      (np) =>
+                                        np.id.toString() === p.id.toString()
+                                    )
+                                  ) {
+                                    setProductDetails(
+                                      productDetails.map((np) =>
+                                        np.id.toString() === p.id.toString()
+                                          ? { ...p, fieldValue: e }
+                                          : np
+                                      )
+                                    );
+                                  }
+                                }}
+                              />
+                            </View>
+                          ))}
+                        </View>
+                      )}
+
+                      <View style={{ flexDirection: "column" }}>
+                        <TextInput
+                          dense
+                          label="Enter field name"
+                          value={values.fieldName}
+                          onChangeText={(e) => {
+                            setFieldValue("fieldName", e);
+                          }}
+                          // onBlur={formik.handleBlur("fieldName")}
+                        />
+                        <TextInput
+                          dense
+                          label="Enter field values"
+                          multiline
+                          numberOfLines={5}
+                          value={values.fieldValue}
+                          onChangeText={(e) => {
+                            setFieldValue("fieldValue", e);
+                          }}
+                          // onBlur={formik.handleBlur("fieldValue")}
+                        />
+                        <Button
+                          style={{ backgroundColor: accentColor }}
+                          onPress={() => {
+                            setProductDetails([
+                              ...productDetails,
+                              {
+                                id: uuidv4(),
+                                fieldName: values.fieldName,
+                                fieldValue: values.fieldValue,
+                              },
+                            ]);
+
+                            setFieldValue("fieldValue", "");
+                            setFieldValue("fieldName", "");
+                          }}
+                        >
+                          Add details
+                        </Button>
+                      </View>
                     </View>
-                    <ScrollView style={{ width: "100%" }} contentContainerStyle={{ width: "100%" }}>
-                      {getCategories.length > 0 &&
-                        getCategories.map((cat, i) => (
-                          <ListItem
-                            key={i}
-                            bottomDivider
-                            onPress={() => {
-                              if (values.selectedCategories.some(c => c._id.toString() === cat._id.toString())) {
-                                setFieldValue("selectedCategories", [...values.selectedCategories]);
-                              } else {
-                                setFieldValue("selectedCategories", [...values.selectedCategories, cat]);
-                              }
-                              closeMenu();
-                            }}>
-                            <ListItem.Content>
-                              <ListItem.Title
-                                style={{
-                                  color: accentColor,
-                                  fontWeight: "500",
-                                }}>
-                                {cat.name}
-                              </ListItem.Title>
-                              {/* <Flex justifyContent={"space-between"}>
-                              </Flex> */}
-                              {/* <Badge bg={accentColor} color={primaryColor}>
-                                  ADD
-                                </Badge> */}
-                            </ListItem.Content>
-                          </ListItem>
-                        ))}
-                    </ScrollView>
-                  </Actionsheet.Content>
-                </Actionsheet>
+                  )}
+                </View>
 
                 <Button
-                  onPress={onToggleDetails}
-                  contentStyle={{
-                    backgroundColor: accentColor,
-                    borderColor: "#aaa",
-                    borderWidth: 2,
-                  }}>
-                  <Text
-                    style={{
-                      color: primaryColor,
-                      fontWeight: "500",
-                    }}>
-                    Add Store Details
-                  </Text>
+                  onPress={handleSubmit}
+                  loading={isLoading}
+                  disabled={isLoading}
+                  contentStyle={{ width: "100%" }}
+                  labelStyle={{
+                    color: "rgb(240, 191, 76)",
+                    fontWeight: "bold",
+                  }}
+                  style={styles.btn}
+                >
+                  Submit
                 </Button>
-
-                {showDetails && (
-                  <View
-                    style={{
-                      justifyContent: "center",
-                      borderRadius: 5,
-                      borderColor: accentColor,
-                      borderWidth: 2,
-                      padding: 10,
-                      gridGap: 10,
-                      backgroundColor: textColor,
-                    }}>
-                    {productDetails.length > 0 && (
-                      <View
-                        style={{
-                          // flexDirection: "row",
-                          justifyContent: "space-between",
-                        }}>
-                        <Text
-                          style={{
-                            textAlign: "center",
-                            fontWeight: "500",
-                            fontSize: 15,
-                            marginVertical: 10,
-                          }}>
-                          All Details
-                        </Text>
-                        {productDetails.map((p, i) => (
-                          <View key={i} style={{ gridGap: 5, justifyContent: "center" }}>
-                            <Icon
-                              type='material'
-                              name='delete'
-                              size={15}
-                              color={deleteColor}
-                              onPress={() => {
-                                setProductDetails(
-                                  productDetails.filter(np => np.id.toString() !== p.id.toString())
-                                );
-                              }}
-                            />
-                            <TextInput
-                              dense
-                              label='Enter field name'
-                              value={p.fieldName}
-                              onChangeText={e => {
-                                if (productDetails.some(np => np.id.toString() === p.id.toString())) {
-                                  setProductDetails(
-                                    productDetails.map(np =>
-                                      np.id.toString() === p.id.toString() ? { ...p, fieldName: e } : np
-                                    )
-                                  );
-                                }
-                              }}
-                            />
-                            <TextInput
-                              dense
-                              label='Enter field values'
-                              multiline
-                              // numberOfLines={5}
-                              value={p.fieldValue}
-                              onChangeText={e => {
-                                if (productDetails.some(np => np.id.toString() === p.id.toString())) {
-                                  setProductDetails(
-                                    productDetails.map(np =>
-                                      np.id.toString() === p.id.toString() ? { ...p, fieldValue: e } : np
-                                    )
-                                  );
-                                }
-                              }}
-                            />
-                          </View>
-                        ))}
-                      </View>
-                    )}
-
-                    <View style={{ flexDirection: "column" }}>
-                      <TextInput
-                        dense
-                        label='Enter field name'
-                        value={values.fieldName}
-                        onChangeText={e => {
-                          setFieldValue("fieldName", e);
-                        }}
-                        // onBlur={formik.handleBlur("fieldName")}
-                      />
-                      <TextInput
-                        dense
-                        label='Enter field values'
-                        multiline
-                        numberOfLines={5}
-                        value={values.fieldValue}
-                        onChangeText={e => {
-                          setFieldValue("fieldValue", e);
-                        }}
-                        // onBlur={formik.handleBlur("fieldValue")}
-                      />
-                      <Button
-                        style={{ backgroundColor: accentColor }}
-                        onPress={() => {
-                          setProductDetails([
-                            ...productDetails,
-                            {
-                              id: uuidv4(),
-                              fieldName: values.fieldName,
-                              fieldValue: values.fieldValue,
-                            },
-                          ]);
-
-                          setFieldValue("fieldValue", "");
-                          setFieldValue("fieldName", "");
-                        }}>
-                        Add details
-                      </Button>
-                    </View>
-                  </View>
-                )}
               </View>
-
-              <Button
-                onPress={handleSubmit}
-                loading={isLoading}
-                disabled={isLoading}
-                contentStyle={{ width: "100%" }}
-                labelStyle={{ color: "rgb(240, 191, 76)", fontWeight: "bold" }}
-                style={styles.btn}>
-                Submit
-              </Button>
-            </View>
-          )}
-        </Formik>
-      </ScrollView>
+            )}
+          </Formik>
+        </ScrollView>
+      )}
     </Layout>
   );
 }
@@ -517,36 +661,36 @@ const styles = StyleSheet.create({
   h: { backgroundColor: "#B12704" },
 });
 
-export async function getServerSideProps(ctx) {
-  const { storeId } = ctx.params;
+// export async function getServerSideProps(ctx) {
+//   const { storeId } = ctx.params;
 
-  const { token } = parseCookies(ctx);
-  if (!token) {
-    return {
-      notFound: true,
-    };
-  }
+//   const { token } = parseCookies(ctx);
+//   if (!token) {
+//     return {
+//       notFound: true,
+//     };
+//   }
 
-  const decode = jwtDecode(token);
-  if (!token || decode.role === "user") {
-    return {
-      notFound: true,
-    };
-  }
+//   const decode = jwtDecode(token);
+//   if (!token || decode.role === "user") {
+//     return {
+//       notFound: true,
+//     };
+//   }
 
-  const data = await ssrClient(token).request(GET_MY_STORE_DETAILS, {
-    // owner: decode.id,
-    storeId,
-    getCategoriesFilter: { hasProduct: true },
-  });
+//   const data = await ssrClient(token).request(GET_MY_STORE_DETAILS, {
+//     // owner: decode.id,
+//     storeId,
+//     getCategoriesFilter: { hasProduct: true },
+//   });
 
-  return {
-    props: {
-      storeId,
-      data: data || null,
-    },
-  };
-}
+//   return {
+//     props: {
+//       storeId,
+//       data: data || null,
+//     },
+//   };
+// }
 
 //  <View style={styles.f}>
 //    <Snackbar
