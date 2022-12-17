@@ -30,6 +30,7 @@ export async function getStaticProps(ctx) {
     // console.log("---data----", data);
     return {
       props: { ...data },
+      revalidate: 1,
     };
   } catch (error) {
     console.error(error);
