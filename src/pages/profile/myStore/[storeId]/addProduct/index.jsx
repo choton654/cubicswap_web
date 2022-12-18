@@ -118,21 +118,27 @@ function AddProduct() {
       refetchOnWindowFocus: false,
       enabled: !!productId,
       onSuccess: (d) => {
-        console.log(d);
         setProduct(d.getMyProductDetails);
-        const product = d.getMyProductDetails;
+        setRangePerUnit(d.getMyProductDetails.rangePerUnit);
+        setProductDetails(d.getMyProductDetails.details);
+        setImages(
+          d.getMyProductDetails.images.map((im) => ({ uri: im, id: uuidv4() }))
+        );
+        const newproduct = d.getMyProductDetails;
+        console.log("---newproduct----", newproduct);
         formik.setValues({
-          name: product?.name ? product.name : "",
-          brand: product?.brand ? product.brand : "",
-          category: product?.categories.length > 0 ? product.categories[0] : {},
+          name: newproduct?.name ? newproduct.name : "",
+          brand: newproduct?.brand ? newproduct.brand : "",
+          category:
+            newproduct?.categories.length > 0 ? newproduct.categories[0] : {},
           categories: storeCategories ? storeCategories : [],
-          description: product?.description ? product.description : "",
-          price: product?.price ? product.price : 1,
-          unit: product?.unit ? product.unit : "Piece",
-          inStock: product?.inStock ? product.inStock : 1,
-          minOrder: product?.minOrder ? product.minOrder : 1,
-          pricePerUnit: product?.price ? product.price : 1,
-          qty: product?.minOrder ? product.minOrder : 1,
+          description: newproduct?.description ? newproduct.description : "",
+          price: newproduct?.price ? newproduct.price : 1,
+          unit: newproduct?.unit ? newproduct.unit : "Piece",
+          inStock: newproduct?.inStock ? newproduct.inStock : 1,
+          minOrder: newproduct?.minOrder ? newproduct.minOrder : 1,
+          pricePerUnit: newproduct?.price ? newproduct.price : 1,
+          qty: newproduct?.minOrder ? newproduct.minOrder : 1,
           fieldName: "",
           fieldValue: "",
         });
@@ -352,42 +358,120 @@ function AddProduct() {
       } else {
         // update product
         console.log("update product");
+        const filterImgs = images.filter((nimg) => nimg.width && nimg.height);
+        console.log("---filterImgs---", filterImgs);
+        if (filterImgs.length > 0) {
+          const newFilterImgs = await Promise.all(
+            filterImgs.map((file) => {
+              let newpic;
 
-        updateProductMutate(
-          {
-            updateOneProductFilter: {
-              _id: productId,
-              // user: _id,
-              storeId: storeId,
+              let data = {
+                file: file.uri,
+                upload_preset: "ecommerce",
+                api_key: process.env.CLOUDNARY_API_KEY,
+              };
+
+              return fetch(
+                `https://api.cloudinary.com/v1_1/choton/image/upload`,
+                {
+                  body: JSON.stringify(data),
+                  headers: {
+                    "content-type": "application/json",
+                  },
+                  method: "POST",
+                }
+              )
+                .then((res) => res.json())
+                .then((data) => {
+                  const imageData = data;
+
+                  newpic = `https://res.cloudinary.com/choton/image/upload/$imgwidth_1600/$imgheight_900/$border_10/e_trim/if_w_gte_h,w_$imgwidth_sub_$border_mul_2/if_else,h_$imgheight_sub_$border_mul_2/bo_10px_solid_rgb:ffffff00/c_limit,w_$imgwidth,h_$imgheight,b_rgb:ffffff/q_100,f_auto/${
+                    imageData.secure_url.split("/")[6]
+                  }/${imageData.secure_url.split("/")[7].split(".")[0]}.webp`;
+
+                  return newpic;
+                });
+            })
+          );
+          console.log("---newFilterImgs---", newFilterImgs);
+          updateProductMutate(
+            {
+              updateOneProductFilter: {
+                _id: productId,
+                // user: _id,
+                storeId: storeId,
+              },
+              updateOneProductRecord: {
+                unit,
+                inStock,
+                minOrder,
+                name,
+                brand,
+                description,
+                images: [
+                  ...images.filter((nimg) => !nimg.width).map((i) => i.uri),
+                  ...newFilterImgs,
+                ],
+                // category: category._id,
+                categories: [category._id],
+                inStock,
+                price,
+                details:
+                  productDetails.length > 0
+                    ? productDetails.map((r) => ({
+                        fieldName: r.fieldName,
+                        fieldValue: r.fieldValue,
+                      }))
+                    : [],
+                rangePerUnit: rangePerUnit.map((r) => ({
+                  pricePerUnit: r.pricePerUnit,
+                  qty: r.qty,
+                })),
+              },
             },
-            updateOneProductRecord: {
-              unit,
-              inStock,
-              minOrder,
-              name,
-              brand,
-              description,
-              // category: category._id,
-              categories: [category._id],
-              inStock,
-              price,
-              details:
-                productDetails.length > 0
-                  ? productDetails.map((r) => ({
-                      fieldName: r.fieldName,
-                      fieldValue: r.fieldValue,
-                    }))
-                  : [],
-              rangePerUnit: rangePerUnit.map((r) => ({
-                pricePerUnit: r.pricePerUnit,
-                qty: r.qty,
-              })),
+            {
+              onError: (e) => console.error(e),
+            }
+          );
+        } else {
+          updateProductMutate(
+            {
+              updateOneProductFilter: {
+                _id: productId,
+                // user: _id,
+                storeId: storeId,
+              },
+              updateOneProductRecord: {
+                unit,
+                inStock,
+                minOrder,
+                name,
+                brand,
+                description,
+                images: [...images.map((i) => i.uri)],
+                // category: category._id,
+                categories: [category._id],
+                inStock,
+                price,
+                details:
+                  productDetails.length > 0
+                    ? productDetails.map((r) => ({
+                        fieldName: r.fieldName,
+                        fieldValue: r.fieldValue,
+                      }))
+                    : [],
+                rangePerUnit: rangePerUnit.map((r) => ({
+                  pricePerUnit: r.pricePerUnit,
+                  qty: r.qty,
+                })),
+              },
             },
-          },
-          {
-            onError: (e) => console.error(e),
-          }
-        );
+            {
+              onError: (e) => console.error(e),
+            }
+          );
+        }
+
         // .then((d) => console.log(d))
         // .catch((e) => console.error(e))
         // .finally(() => setloading(false));
@@ -396,7 +480,7 @@ function AddProduct() {
   });
 
   const [rangePerUnit, setRangePerUnit] = useState(
-    product?.rangePerUnit
+    product
       ? product?.rangePerUnit.map((r) => ({
           id: uuidv4(),
           pricePerUnit: r.pricePerUnit,
@@ -412,7 +496,7 @@ function AddProduct() {
   );
 
   const [productDetails, setProductDetails] = useState(
-    product?.details
+    product
       ? product?.details.map((p) => ({
           id: uuidv4(),
           fieldName: p.fieldName,
@@ -420,6 +504,8 @@ function AddProduct() {
         }))
       : []
   );
+
+  console.log("---rangePerUnit---", rangePerUnit);
 
   useEffect(() => {
     (async () => {
@@ -471,7 +557,7 @@ function AddProduct() {
           </Text>
         </View>
 
-        {!product && (
+        {
           <View style={{ paddingTop: 5 }}>
             <Text style={{ textAlign: "center", fontSize: ".8rem" }}>
               Upload Image
@@ -559,7 +645,7 @@ function AddProduct() {
               </ScrollView>
             </View>
           </View>
-        )}
+        }
 
         {error.length > 0 && (
           <HelperText
@@ -873,9 +959,12 @@ function AddProduct() {
                           parseFloat(rangePerUnit[rangePerUnit.length - 1].qty)
                       ) {
                         console.log(
-                          parseFloat(rangePerUnit[rangePerUnit.length - 1]),
+                          parseFloat(
+                            rangePerUnit[rangePerUnit.length - 1].pricePerUnit
+                          ),
                           parseFloat(formik.values.pricePerUnit),
-                          parseFloat(formik.values.qty)
+                          parseFloat(formik.values.qty),
+                          parseFloat(rangePerUnit[rangePerUnit.length - 1].qty)
                         );
                         console.log("runn");
                         return;
