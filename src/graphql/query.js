@@ -249,7 +249,7 @@ export const GET_MY_PRODUCT_DETAILS = gql`
         fieldName
         fieldValue
       }
-      # images
+      images
       minOrder
       rangePerUnit {
         pricePerUnit
