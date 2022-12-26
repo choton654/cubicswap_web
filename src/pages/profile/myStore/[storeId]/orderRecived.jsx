@@ -1,4 +1,5 @@
 import jwt_decode from "jwt-decode";
+import { useRouter } from "next/router";
 // import { ScrollView, Text, View } from "native-base";
 import { parseCookies } from "nookies";
 import React from "react";
@@ -16,21 +17,25 @@ import { accentColor } from "../../../../Constant/color";
 import { UserState } from "../../../../context/state/userState";
 import { GET_ORDER_ITEMS_BY_STORE } from "../../../../graphql/query";
 
-function OrderRecived({ storeId, storeOrderData, pageInfo, count }) {
-  console.log(storeOrderData, pageInfo, count);
+function OrderRecived({}) {
+  // console.log(storeOrderData, pageInfo, count);
 
   const {
     state: { user: me, isAuthenticated },
   } = UserState();
-
-  const getStoreOrders = async pageParam => {
+  const router = useRouter();
+  const { storeId } = router.query;
+  const getStoreOrders = async (pageParam) => {
     console.log(pageParam);
-    const { getOrderItemsByStore } = await client.request(GET_ORDER_ITEMS_BY_STORE, {
-      storeId,
-      page: pageParam === null ? 1 : pageParam,
-      perPage: 10,
-      sort: "CREATEDAT_DESC",
-    });
+    const { getOrderItemsByStore } = await client.request(
+      GET_ORDER_ITEMS_BY_STORE,
+      {
+        storeId,
+        page: pageParam === null ? 1 : pageParam,
+        perPage: 10,
+        sort: "CREATEDAT_DESC",
+      }
+    );
 
     return {
       storeOrders: getOrderItemsByStore.items,
@@ -41,26 +46,41 @@ function OrderRecived({ storeId, storeOrderData, pageInfo, count }) {
     };
   };
 
-  const { isLoading, isSuccess, error, data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useInfiniteQuery("storeOrders", ({ pageParam = 1 }) => getStoreOrders(pageParam), {
+  const {
+    isLoading,
+    isSuccess,
+    error,
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+  } = useInfiniteQuery(
+    "storeOrders",
+    ({ pageParam = 1 }) => getStoreOrders(pageParam),
+    {
       getNextPageParam: (lastPage, pages) => {
         return lastPage.hasNextPage ? lastPage.page + 1 : undefined;
       },
       getPreviousPageParam: (firstPage, allPages) => {
         return firstPage.hasPreviousPage;
       },
-      initialData: storeOrderData,
+      // initialData: storeOrderData,
       enabled: isAuthenticated,
       retry: false,
       refetchOnWindowFocus: false,
       retryOnMount: false,
       refetchOnReconnect: false,
-    });
+    }
+  );
 
   const loadMore = () => {
     if (hasNextPage) {
       setTimeout(() => {
-        if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight) {
+        if (
+          window.innerHeight + document.documentElement.scrollTop ===
+          document.documentElement.offsetHeight
+        ) {
           fetchNextPage();
         }
       }, 2000);
@@ -70,7 +90,7 @@ function OrderRecived({ storeId, storeOrderData, pageInfo, count }) {
   console.log(hasNextPage);
 
   return (
-    <Layout title='Recived orders'>
+    <Layout title="Recived orders">
       <View style={{ marginBottom: 10 }} />
       {isSuccess && data.pages?.length > 0 && (
         <>
@@ -89,7 +109,8 @@ function OrderRecived({ storeId, storeOrderData, pageInfo, count }) {
                           padding: 2,
                           margin: 4,
                           backgroundColor: "#ccc",
-                        }}>
+                        }}
+                      >
                         <Card.Content>
                           <OrderDetails orderItem={o} orderId={_id} />
                         </Card.Content>
@@ -110,7 +131,8 @@ function OrderRecived({ storeId, storeOrderData, pageInfo, count }) {
                       flex: 1,
                       justifyContent: "center",
                       alignItems: "center",
-                    }}>
+                    }}
+                  >
                     <Text>You have not recived any order yet</Text>
                   </View>
                 )}
@@ -132,8 +154,9 @@ function OrderRecived({ storeId, storeOrderData, pageInfo, count }) {
                   justifyContent: "center",
                   alignItems: "center",
                   padding: 20,
-                }}>
-                <ActivityIndicator size='small' color={accentColor} />
+                }}
+              >
+                <ActivityIndicator size="small" color={accentColor} />
               </View>
             )}
             <View>
@@ -145,62 +168,61 @@ function OrderRecived({ storeId, storeOrderData, pageInfo, count }) {
     </Layout>
   );
 }
-
-export async function getServerSideProps(ctx) {
-  const {
-    params: { storeId },
-  } = ctx;
-  const { token } = parseCookies(ctx);
-
-  if (!token) {
-    return {
-      notFound: true,
-    };
-  }
-  const decode = jwt_decode(token);
-  console.log(decode);
-  if (decode.role === "user") {
-    return {
-      notFound: true,
-    };
-  }
-
-  try {
-    const { getOrderItemsByStore } = await ssrClient(token).request(GET_ORDER_ITEMS_BY_STORE, {
-      storeId,
-      page: 1,
-      perPage: 10,
-      sort: "CREATEDAT_DESC",
-    });
-
-    return {
-      props: {
-        storeOrderData: {
-          pages: [
-            {
-              storeOrders: getOrderItemsByStore.items,
-              page: getOrderItemsByStore.pageInfo.currentPage,
-              hasNextPage: getOrderItemsByStore.pageInfo.hasNextPage,
-              hasPreviousPage: getOrderItemsByStore.pageInfo.hasPreviousPage,
-              count: getOrderItemsByStore.count,
-            },
-          ],
-          pageParams: [null],
-        },
-        storeId,
-        token,
-      },
-    };
-  } catch (error) {
-    console.error(error);
-    return {
-      notFound: true,
-      // props: { error: JSON.stringify(error) },
-    };
-  }
-}
-
 export default OrderRecived;
+
+// export async function getServerSideProps(ctx) {
+//   const {
+//     params: { storeId },
+//   } = ctx;
+//   const { token } = parseCookies(ctx);
+
+//   if (!token) {
+//     return {
+//       notFound: true,
+//     };
+//   }
+//   const decode = jwt_decode(token);
+//   console.log(decode);
+//   if (decode.role === "user") {
+//     return {
+//       notFound: true,
+//     };
+//   }
+
+//   try {
+//     const { getOrderItemsByStore } = await ssrClient(token).request(GET_ORDER_ITEMS_BY_STORE, {
+//       storeId,
+//       page: 1,
+//       perPage: 10,
+//       sort: "CREATEDAT_DESC",
+//     });
+
+//     return {
+//       props: {
+//         storeOrderData: {
+//           pages: [
+//             {
+//               storeOrders: getOrderItemsByStore.items,
+//               page: getOrderItemsByStore.pageInfo.currentPage,
+//               hasNextPage: getOrderItemsByStore.pageInfo.hasNextPage,
+//               hasPreviousPage: getOrderItemsByStore.pageInfo.hasPreviousPage,
+//               count: getOrderItemsByStore.count,
+//             },
+//           ],
+//           pageParams: [null],
+//         },
+//         storeId,
+//         token,
+//       },
+//     };
+//   } catch (error) {
+//     console.error(error);
+//     return {
+//       notFound: true,
+//       // props: { error: JSON.stringify(error) },
+//     };
+//   }
+// }
 
 // const {
 //   isLoading,
