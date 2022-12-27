@@ -24,7 +24,7 @@ function OrderSummery({ orderData }) {
 
   // const [refreshing, setRefreshing] = useState(false);
 
-  const getOrders = async pageParam => {
+  const getOrders = async (pageParam) => {
     console.log(pageParam);
     const { getMyOrders } = await client.request(GET_MY_ORDERS, {
       user: me._id,
@@ -41,21 +41,33 @@ function OrderSummery({ orderData }) {
     };
   };
 
-  const { isLoading, isSuccess, error, data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useInfiniteQuery("myOrders", ({ pageParam = 1 }) => getOrders(pageParam), {
+  const {
+    isLoading,
+    isSuccess,
+    error,
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+  } = useInfiniteQuery(
+    "myOrders",
+    ({ pageParam = 1 }) => getOrders(pageParam),
+    {
       getNextPageParam: (lastPage, pages) => {
         return lastPage.hasNextPage ? lastPage.page + 1 : undefined;
       },
       getPreviousPageParam: (firstPage, allPages) => {
         return firstPage.hasPreviousPage;
       },
-      initialData: orderData,
+      // initialData: orderData,
       enabled: isAuthenticated,
       retry: false,
       refetchOnWindowFocus: false,
       retryOnMount: false,
       refetchOnReconnect: false,
-    });
+    }
+  );
 
   if (isLoading) return <CustomLoader />;
 
@@ -67,7 +79,7 @@ function OrderSummery({ orderData }) {
     );
 
   return (
-    <Layout title='My Orders'>
+    <Layout title="My Orders">
       {isAuthenticated ? (
         <Box>
           {data.pages?.length > 0 && (
@@ -76,7 +88,9 @@ function OrderSummery({ orderData }) {
                 <React.Fragment key={i}>
                   {p?.orders?.length > 0 ? (
                     p?.orders?.map((o, i) =>
-                      o.orderItems.map((item, i) => <OrderItem key={i} orderItem={item} order={o} />)
+                      o.orderItems.map((item, i) => (
+                        <OrderItem key={i} orderItem={item} order={o} />
+                      ))
                     )
                   ) : (
                     <EmptyCart order />
@@ -85,7 +99,7 @@ function OrderSummery({ orderData }) {
               ))}
             </ScrollView>
           )}
-          {isFetching && (
+          {/* {isFetching && (
             <Portal>
               <View
                 style={{
@@ -97,7 +111,7 @@ function OrderSummery({ orderData }) {
                 <ActivityIndicator size='small' color={accentColor} />
               </View>
             </Portal>
-          )}
+          )} */}
 
           {hasNextPage ? (
             <View>
@@ -120,62 +134,62 @@ function OrderSummery({ orderData }) {
     </Layout>
   );
 }
-
-export async function getServerSideProps(ctx) {
-  const { token } = parseCookies(ctx);
-  // if (!token) {
-  //   return {
-  //     notFound: true,
-  //   };
-  // }
-
-  if (!token) {
-    return {
-      props: { token: null },
-    };
-  }
-  const decode = jwtDecode(token);
-
-  if (decode.role !== "user") {
-    return {
-      notFound: true,
-    };
-  }
-
-  try {
-    const { getMyOrders } = await ssrClient(token).request(GET_MY_ORDERS, {
-      user: decode.id,
-      page: 1,
-      perPage: 12,
-    });
-
-    return {
-      props: {
-        orderData: {
-          pages: [
-            {
-              orders: getMyOrders.items,
-              page: getMyOrders.pageInfo.currentPage,
-              // pages: getMyOrders.pageInfo.currentPage,
-              hasNextPage: getMyOrders.pageInfo.hasNextPage,
-              hasPreviousPage: getMyOrders.pageInfo.hasPreviousPage,
-              count: getMyOrders.count,
-            },
-          ],
-          pageParams: [null],
-        },
-        // orderData: getMyOrders,
-        token,
-      },
-    };
-  } catch (error) {
-    console.error(error);
-    return {
-      notFound: true,
-    };
-  }
-}
 export default OrderSummery;
+
+// export async function getServerSideProps(ctx) {
+//   const { token } = parseCookies(ctx);
+//   // if (!token) {
+//   //   return {
+//   //     notFound: true,
+//   //   };
+//   // }
+
+//   if (!token) {
+//     return {
+//       props: { token: null },
+//     };
+//   }
+//   const decode = jwtDecode(token);
+
+//   if (decode.role !== "user") {
+//     return {
+//       notFound: true,
+//     };
+//   }
+
+//   try {
+//     const { getMyOrders } = await ssrClient(token).request(GET_MY_ORDERS, {
+//       user: decode.id,
+//       page: 1,
+//       perPage: 12,
+//     });
+
+//     return {
+//       props: {
+//         orderData: {
+//           pages: [
+//             {
+//               orders: getMyOrders.items,
+//               page: getMyOrders.pageInfo.currentPage,
+//               // pages: getMyOrders.pageInfo.currentPage,
+//               hasNextPage: getMyOrders.pageInfo.hasNextPage,
+//               hasPreviousPage: getMyOrders.pageInfo.hasPreviousPage,
+//               count: getMyOrders.count,
+//             },
+//           ],
+//           pageParams: [null],
+//         },
+//         // orderData: getMyOrders,
+//         token,
+//       },
+//     };
+//   } catch (error) {
+//     console.error(error);
+//     return {
+//       notFound: true,
+//     };
+//   }
+// }
 
 // refreshControl={
 //   <RefreshControl

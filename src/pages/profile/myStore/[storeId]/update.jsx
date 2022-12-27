@@ -1,5 +1,5 @@
 import { Formik } from "formik";
-import { Actionsheet } from "native-base";
+import { Actionsheet, Box, Center, CheckIcon, Select } from "native-base";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
 import {
@@ -47,7 +47,7 @@ export default function UpdateStore() {
     isLoading: sLoading,
     isSuccess,
   } = useQuery(
-    "storeDetails",
+    ["storeDetails", storeId],
     async () => {
       const data = await client.request(GET_MY_STORE_DETAILS, {
         storeId,
@@ -343,6 +343,34 @@ export default function UpdateStore() {
                   </Select>
                 </Box> */}
 
+                  {/* <Center>
+                    <Box maxW="full" w={"full"}>
+                      <Select
+                        // selectedValue={}
+                        // minWidth="200"
+                        accessibilityLabel="Choose Service"
+                        placeholder="Choose Service"
+                        _selectedItem={{
+                          bg: "teal.600",
+                          endIcon: <CheckIcon size="5" />,
+                        }}
+                        mt={1}
+                        onValueChange={(itemValue) =>
+                          setFieldValue("selectedCategories", [
+                            ...values.selectedCategories,
+                            itemValue,
+                          ])
+                        }
+                      >
+                        {data &&
+                          data.getCategories.length > 0 &&
+                          data.getCategories.map((cat, i) => (
+                            <Select.Item key={i} label={cat.name} value="ux" />
+                          ))}
+                      </Select>
+                    </Box>
+                  </Center> */}
+
                   <Button
                     onPress={openMenu}
                     contentStyle={{
@@ -354,80 +382,82 @@ export default function UpdateStore() {
                     Select categories
                   </Button>
 
-                  <Actionsheet
-                    isOpen={visible}
-                    onClose={() => setVisible(false)}
-                    maxW={screenWidth}
-                    w={screenWidth}
-                    mx={"auto"}
-                    hideDragIndicator
-                  >
-                    <Actionsheet.Content w={"full"} borderTopRadius="0">
-                      <TouchableOpacity
-                        style={{ padding: 10 }}
-                        onPress={closeMenu}
-                      >
-                        <Icon size={30} type="material" name="cancel" />
-                      </TouchableOpacity>
-                      <View
-                        style={{
-                          justifyContent: "center",
-                          alignItems: "center",
-                          paddingVertical: 10,
-                        }}
-                      >
-                        <Text style={{ fontSize: 15, fontWeight: "500" }}>
-                          Add Collections to Store
-                        </Text>
-                      </View>
-                      <ScrollView
-                        style={{ width: "100%" }}
-                        contentContainerStyle={{ width: "100%" }}
-                      >
-                        {data.getCategories.length > 0 &&
-                          data.getCategories.map((cat, i) => (
-                            <ListItem
-                              key={i}
-                              bottomDivider
-                              onPress={() => {
-                                if (
-                                  values.selectedCategories.some(
-                                    (c) =>
-                                      c._id.toString() === cat._id.toString()
-                                  )
-                                ) {
-                                  setFieldValue("selectedCategories", [
-                                    ...values.selectedCategories,
-                                  ]);
-                                } else {
-                                  setFieldValue("selectedCategories", [
-                                    ...values.selectedCategories,
-                                    cat,
-                                  ]);
-                                }
-                                closeMenu();
-                              }}
-                            >
-                              <ListItem.Content>
-                                <ListItem.Title
-                                  style={{
-                                    color: accentColor,
-                                    fontWeight: "500",
-                                  }}
-                                >
-                                  {cat.name}
-                                </ListItem.Title>
-                                {/* <Flex justifyContent={"space-between"}>
+                  {data && (
+                    <Actionsheet
+                      isOpen={data && visible}
+                      onClose={() => setVisible(false)}
+                      maxW={screenWidth}
+                      w={screenWidth}
+                      mx={"auto"}
+                      hideDragIndicator
+                    >
+                      <Actionsheet.Content w={"full"} borderTopRadius="0">
+                        <TouchableOpacity
+                          style={{ padding: 10 }}
+                          onPress={closeMenu}
+                        >
+                          <Icon size={30} type="material" name="cancel" />
+                        </TouchableOpacity>
+                        <View
+                          style={{
+                            justifyContent: "center",
+                            alignItems: "center",
+                            paddingVertical: 10,
+                          }}
+                        >
+                          <Text style={{ fontSize: 15, fontWeight: "500" }}>
+                            Add Collections to Store
+                          </Text>
+                        </View>
+                        <ScrollView
+                          style={{ width: "100%" }}
+                          contentContainerStyle={{ width: "100%" }}
+                        >
+                          {data.getCategories.length > 0 &&
+                            data.getCategories.map((cat, i) => (
+                              <ListItem
+                                key={i}
+                                bottomDivider
+                                onPress={() => {
+                                  if (
+                                    values.selectedCategories.some(
+                                      (c) =>
+                                        c._id.toString() === cat._id.toString()
+                                    )
+                                  ) {
+                                    setFieldValue("selectedCategories", [
+                                      ...values.selectedCategories,
+                                    ]);
+                                  } else {
+                                    setFieldValue("selectedCategories", [
+                                      ...values.selectedCategories,
+                                      cat,
+                                    ]);
+                                  }
+                                  closeMenu();
+                                }}
+                              >
+                                <ListItem.Content>
+                                  <ListItem.Title
+                                    style={{
+                                      color: accentColor,
+                                      fontWeight: "500",
+                                    }}
+                                  >
+                                    {cat.name}
+                                  </ListItem.Title>
+                                  {/* <Flex justifyContent={"space-between"}>
                               </Flex> */}
-                                {/* <Badge bg={accentColor} color={primaryColor}>
+                                  {/* <Badge bg={accentColor} color={primaryColor}>
                                   ADD
                                 </Badge> */}
-                              </ListItem.Content>
-                            </ListItem>
-                          ))}
-                      </ScrollView>
-                    </Actionsheet.Content>
-                  </Actionsheet>
+                                </ListItem.Content>
+                              </ListItem>
+                            ))}
+                        </ScrollView>
+                      </Actionsheet.Content>
+                    </Actionsheet>
+                  )}
 
                   <Button
                     onPress={onToggleDetails}
