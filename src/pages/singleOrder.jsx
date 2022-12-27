@@ -3,7 +3,8 @@ import { useRouter } from "next/router";
 import { parseCookies } from "nookies";
 import React from "react";
 import { ScrollView, Text, View } from "react-native";
-import { ssrClient } from "../client";
+import { useQuery } from "react-query";
+import { client, ssrClient } from "../client";
 import Layout from "../components/Layout";
 import OrderDetails from "../components/Order/OrderDetails";
 import RestOrderItems from "../components/Order/RestOrderItems";
@@ -11,109 +12,163 @@ import ShippingDetails from "../components/Order/ShippingDetails";
 import { UserState } from "../context/state/userState";
 import { GET_SINGLE_ORDER } from "../graphql/query";
 
-function SingleOrder({ error, order, orderId, productId, orderItem, restOrderItems }) {
+function SingleOrder({}) {
   const router = useRouter();
 
   const {
     state: { user: me, isAuthenticated },
   } = UserState();
 
+  const getSingleOrder = async () => {
+    const { getOneOrder } = await client.request(GET_SINGLE_ORDER, {
+      user: me._id,
+      orderId: router?.query?.orderId,
+    });
+    const orderItem = getOneOrder?.orderItems?.find(
+      (o, i) =>
+        o.product?._id.toString() === router?.query?.productId.toString()
+    );
+    const restOrderItems = getOneOrder?.orderItems?.filter(
+      (o, i) =>
+        o.product?._id.toString() !== router?.query?.productId.toString()
+    );
+
+    return {
+      order: getOneOrder,
+      // orderId,
+      // productId,
+      orderItem,
+      restOrderItems,
+    };
+  };
+
+  const { isLoading, error, data } = useQuery(
+    ["getSingleOrder", router?.query?.orderId],
+    () => getSingleOrder(),
+    {
+      enabled: isAuthenticated,
+      retry: false,
+      refetchOnWindowFocus: false,
+      retryOnMount: false,
+      refetchOnReconnect: false,
+    }
+  );
+
   return (
-    <Layout title='Order Details'>
-      <View w='100%' mb='8px' backgroundColor='#fff' ViewShadow={"0 2px 2px -1px rgb(0 0 0 / 20%)"}></View>
-      <ScrollView>
-        {Object.keys(orderItem).length > 0 && (
-          <OrderDetails orderItem={orderItem} orderId={router?.query?.orderId} showStatus />
-        )}
-        <ShippingDetails
-          // me={me}
-          order={orderItem}
-          shippingAddress={order.shippingAddress}
-          user={order.user}
-        />
-        {restOrderItems?.length > 0 && (
-          <View>
-            <View
-              style={{
-                backgroundColor: "rgba(39,39,39,.2)",
-                borderBottomWidth: 1,
-                borderBottomColor: "#aaa",
-                paddingHorizontal: 16,
-                paddingVertical: 15,
-              }}>
-              <Text
+    <Layout title="Order Details">
+      <View
+        w="100%"
+        mb="8px"
+        backgroundColor="#fff"
+        ViewShadow={"0 2px 2px -1px rgb(0 0 0 / 20%)"}
+      ></View>
+      {data && (
+        <ScrollView>
+          {Object.keys(data?.orderItem).length > 0 && (
+            <OrderDetails
+              orderItem={data?.orderItem}
+              orderId={router?.query?.orderId}
+              showStatus
+            />
+          )}
+          <ShippingDetails
+            // me={me}
+            order={data?.orderItem}
+            shippingAddress={data?.order.shippingAddress}
+            user={data?.order.user}
+          />
+          {data?.restOrderItems?.length > 0 && (
+            <View>
+              <View
                 style={{
-                  fontSize: 15,
-                  fontFamily:
-                    'Roboto Medium,Roboto-Medium,Droid Sans,HelveticaNeue-Medium,Helvetica Neue Medium,"sans-serif-medium"',
-                }}>
-                Other Items In this Order
-              </Text>
+                  backgroundColor: "rgba(39,39,39,.2)",
+                  borderBottomWidth: 1,
+                  borderBottomColor: "#aaa",
+                  paddingHorizontal: 16,
+                  paddingVertical: 15,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontFamily:
+                      'Roboto Medium,Roboto-Medium,Droid Sans,HelveticaNeue-Medium,Helvetica Neue Medium,"sans-serif-medium"',
+                  }}
+                >
+                  Other Items In this Order
+                </Text>
+              </View>
+              {data?.restOrderItems?.map((o, i) => (
+                <RestOrderItems
+                  orderId={router?.query?.orderId}
+                  orderItem={o}
+                  key={i}
+                />
+              ))}
             </View>
-            {restOrderItems?.map((o, i) => (
-              <RestOrderItems orderId={router?.query?.orderId} orderItem={o} key={i} />
-            ))}
-          </View>
-        )}
-      </ScrollView>
+          )}
+        </ScrollView>
+      )}
     </Layout>
   );
 }
 
 export default SingleOrder;
 
-export async function getServerSideProps(ctx) {
-  const {
-    query: { orderId, productId },
-  } = ctx;
-  const { token } = parseCookies(ctx);
+// export async function getServerSideProps(ctx) {
+//   const {
+//     query: { orderId, productId },
+//   } = ctx;
+//   const { token } = parseCookies(ctx);
 
-  if (!token) {
-    return {
-      notFound: true,
-    };
-  }
-  if (!orderId || !productId) {
-    return {
-      notFound: true,
-    };
-  }
-  const decode = jwtDecode(token);
+//   if (!token) {
+//     return {
+//       notFound: true,
+//     };
+//   }
+//   if (!orderId || !productId) {
+//     return {
+//       notFound: true,
+//     };
+//   }
+//   const decode = jwtDecode(token);
 
-  if (decode.role === "seller") {
-    return {
-      notFound: true,
-    };
-  }
+//   if (decode.role === "seller") {
+//     return {
+//       notFound: true,
+//     };
+//   }
 
-  try {
-    const { getOneOrder } = await ssrClient(token).request(GET_SINGLE_ORDER, {
-      user: decode.id,
-      orderId,
-    });
+//   try {
+//     const { getOneOrder } = await ssrClient(token).request(GET_SINGLE_ORDER, {
+//       user: decode.id,
+//       orderId,
+//     });
 
-    const orderItem = getOneOrder?.orderItems?.find((o, i) => o.product?._id.toString() === productId.toString());
-    const restOrderItems = getOneOrder?.orderItems?.filter(
-      (o, i) => o.product?._id.toString() !== productId.toString()
-    );
+//     const orderItem = getOneOrder?.orderItems?.find(
+//       (o, i) => o.product?._id.toString() === productId.toString()
+//     );
+//     const restOrderItems = getOneOrder?.orderItems?.filter(
+//       (o, i) => o.product?._id.toString() !== productId.toString()
+//     );
 
-    return {
-      props: {
-        order: getOneOrder,
-        orderId,
-        productId,
-        orderItem,
-        restOrderItems,
-      },
-    };
-  } catch (error) {
-    console.error(error);
-    return {
-      notFound: true,
-      // props: { error: JSON.stringify(error) },
-    };
-  }
-}
+//     return {
+//       props: {
+//         order: getOneOrder,
+//         orderId,
+//         productId,
+//         orderItem,
+//         restOrderItems,
+//       },
+//     };
+//   } catch (error) {
+//     console.error(error);
+//     return {
+//       notFound: true,
+//       // props: { error: JSON.stringify(error) },
+//     };
+//   }
+// }
 
 // const {
 //   data: { order },

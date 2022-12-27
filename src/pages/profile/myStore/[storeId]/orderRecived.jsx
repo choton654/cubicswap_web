@@ -56,7 +56,7 @@ function OrderRecived({}) {
     isFetching,
     isFetchingNextPage,
   } = useInfiniteQuery(
-    "storeOrders",
+    ["storeOrders", storeId],
     ({ pageParam = 1 }) => getStoreOrders(pageParam),
     {
       getNextPageParam: (lastPage, pages) => {
